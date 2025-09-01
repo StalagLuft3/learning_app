@@ -1,0 +1,13 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+<ic-card style="padding:3rem; margin:2rem">
+  <ic-typography variant="h2" slot="heading">Create Course</ic-typography>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <ic-button type="submit" variant="primary">Create</ic-button>
+  </form>
+</ic-card>
+
+{% endblock %}

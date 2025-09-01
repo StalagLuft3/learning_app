@@ -1,0 +1,111 @@
+{% extends 'learning_app/base.html' %}
+{% load dict_extras %}
+
+{% block content %}
+
+{% if enrolled_courses %}
+<h1 style="margin: 2rem;">Your Enrolled Courses</h2>
+{% for course in enrolled_courses %}
+<ic-accordion heading="{{ course.name }}" style="padding:rem;">
+  {% for module in course.modules.all %}
+  {% if module.id in enrollments %}
+  {% with enrollment=enrollments|get_item:module.id %}
+  <ic-accordion heading="{{ module.name }}">
+    <ic-data-list heading="Module Details" style="padding:1rem">
+      <ic-data-row label="Deadline"
+        value="{{ enrollment.deadline|date:'Y-m-d'|default_if_none:'Not set' }}"></ic-data-row>
+      <ic-data-row label="Score" value="{{ enrollment.score|default_if_none:'Not set' }}"></ic-data-row>
+      <ic-data-row label="Feedback" value="{{ enrollment.feedback|default_if_none:'No feedback' }}">
+        <ic-link href="{% url 'edit_feedback' module.id %}" slot="end-component">
+          Update Feedback
+        </ic-link>
+      </ic-data-row>
+      <ic-data-row label="Course Files" value=""></ic-data-row>
+        <ic-link href="{% url 'module_files' module.id %}" slot="end-component">
+          View
+        </ic-link>
+      </ic-data-row>
+    </ic-data-list>
+  </ic-accordion>
+  {% endwith %}
+  {% endif %}
+  {% endfor %}
+</ic-accordion>
+{% endfor %}
+{% endif %}
+
+{% with standalone_modules=enrolled_modules %}
+{% if standalone_modules %}
+<h1 style="margin: 2rem;">Your Enrolled Standalone Modules</h1>
+<ic-data-list style="padding:1rem">
+  {% for module in standalone_modules %}
+  {% if module.course_set.count == 0 and module.id in enrollments %}
+  {% with enrollment=enrollments|get_item:module.id %}
+  <ic-data-row label="{{ module.name }}"
+    value="Deadline: {{ enrollment.deadline|date:'Y-m-d'|default_if_none:'Not set' }} | Score: {{ enrollment.score|default_if_none:'Not set' }} | Feedback: {{ enrollment.feedback|default_if_none:'No feedback' }}">
+    <a href="{% url 'edit_feedback' module.id %}">Edit Feedback</a>
+    <a href="{% url 'module_files' module.id %}">View Files</a>
+  </ic-data-row>
+  {% endwith %}
+  {% endif %}
+  {% endfor %}
+</ic-data-list>
+{% endif %}
+{% endwith %}
+
+{% if available_courses %}
+<h2>Available Courses to Enrol</h2>
+<ul>
+  {% for course in available_courses %}
+  <li>
+    {{ course.name }}
+    <form method="post" action="{% url 'enrol_course' course.id %}">
+      {% csrf_token %}
+      <button type="submit">Enrol on Course</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% with available_standalone_modules=available_modules %}
+{% if available_standalone_modules %}
+{% for module in available_standalone_modules %}
+{% if module.course_set.count == 0 %}
+{% if forloop.first %}
+<h2>Available Standalone Modules to Enrol</h2>
+<ul>
+  {% endif %}
+  <li>
+    {{ module.name }}
+    <form method="post" action="{% url 'enrol_module' module.id %}">
+      {% csrf_token %}
+      <button type="submit">Enrol on Module</button>
+    </form>
+  </li>
+  {% if forloop.last %}
+</ul>
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<ic-data-list heading="All Enrolled Modules" style="padding:1rem">
+  {% for ms in module_students %}
+    <ic-data-row label="{{ ms.module.name }}">
+      <span>Deadline: {{ ms.deadline|date:'Y-m-d'|default_if_none:'Not set' }}</span>
+      <span>Score: {{ ms.score|default_if_none:'Not set' }}</span>
+      {% if ms.feedback %}
+        <span>Feedback: {{ ms.feedback }}</span>
+      {% endif %}
+      <ic-link slot="end-component" href="{% url 'module_files' ms.module.id %}" variant="primary">
+        View Files
+      </ic-link>
+    </ic-data-row>
+  {% empty %}
+    <ic-data-row label="No enrolled modules." value=""></ic-data-row>
+  {% endfor %}
+</ic-data-list>
+
+{% endblock %}

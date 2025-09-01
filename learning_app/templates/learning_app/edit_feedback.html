@@ -1,0 +1,12 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+
+<h1 style="padding:1rem;">Update your feedback for {{enrollment.module.name}}</h1>
+<form method="post" style="padding:1rem;">
+  {% csrf_token %}
+  <ic-text-field name="feedback" rows="3" cols="40" id="feedback" value="{{ enrollment.feedback|default_if_none:'' }}"></ic-text-field>
+  <button style="margin:1rem;" type="submit" variant="primary">Set Feedback</button>
+</form>
+
+{% endblock %}

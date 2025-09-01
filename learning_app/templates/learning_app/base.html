@@ -1,0 +1,53 @@
+{% load static %}
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>{% block title %}Learning App{% endblock %}</title>
+  <script src="{% static 'main.js' %}"></script>
+</head>
+
+<body>
+  <ic-top-navigation id="main" app-title="Learning Application" status="alpha" version="v1.0.0">
+    <svg slot="app-icon" xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24" fill="#000000">
+      <path d="M0 0h24v24H0V0z" fill="none" />
+      <path
+        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.49L17.5 6.5 9.99 9.99 6.5 17.5zm5.5-6.6c.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1-1.1-.49-1.1-1.1.49-1.1 1.1-1.1z" />
+    </svg>
+    <ic-search-bar slot="search" placeholder="Search" label="Search"></ic-search-bar>
+
+    <ic-navigation-item slot="navigation" label="Profile" href="{% url 'profile' %}"></ic-navigation-item>
+    <ic-navigation-item slot="navigation" label="Chat Rooms" href="{% url 'webchats' %}"></ic-navigation-item>
+    {% if user.role == 'teacher' %}
+      <ic-navigation-item slot="navigation" label="Student and Teacher Search" href="{% url 'teacher_student_search' %}"></ic-navigation-item>
+    {% endif %}
+  </ic-top-navigation>
+
+  {% block content %}
+  {% endblock %}
+</body>
+<ic-back-to-top target="main"></ic-back-to-top>
+<ic-footer caption="All content is available under the Open Government Licence v3.0.">
+  {% if user.is_authenticated %}
+  <ic-footer-link slot="link" href="{% url 'logout' %}">
+    Logout
+  </ic-footer-link>
+  {% else %}
+  <ic-footer-link slot="link" href="{% url 'register_student' %}">Register here</ic-footer-link>
+  {% endif %}
+</ic-footer>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const searchBar = document.querySelector('ic-search-bar');
+    if (searchBar) {
+      searchBar.addEventListener('icSubmitSearch', function (event) {
+        const query = event.detail?.value;
+        if (query) {
+          window.location.href = "/search/courses-modules/?q=" + encodeURIComponent(query);
+        }
+      });
+    }
+  });
+</script>
+
+</html>

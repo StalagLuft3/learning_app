@@ -1,0 +1,40 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+{% if courses %}
+  <ic-accordion-group>
+    {% for course in courses %}
+      <ic-accordion heading="{{ course.name }}">
+        <ic-accordion-group>
+          {% for module in course.modules.all %}
+            <ic-accordion heading="{{ module.name }}">
+              <ic-data-list heading="Module Details">
+                <ic-data-row label="Description" value="{{ module.description }}"></ic-data-row>
+                <ic-data-row label="Manager" value="{{ module.manager.full_name|default:module.manager.username }}"></ic-data-row>
+                <ic-data-row label="Files">
+                  <ic-link slot="end-component" href="{% url 'module_files' module.id %}" variant="primary">
+                    View Files
+                  </ic-link>
+                </ic-data-row>
+              </ic-data-list>
+            </ic-accordion>
+          {% endfor %}
+        </ic-accordion-group>
+      </ic-accordion>
+    {% endfor %}
+  </ic-accordion-group>
+{% else %}
+  <p>No courses found.</p>
+{% endif %}
+
+{% if standalone_modules %}
+  <ic-data-list heading="Standalone Modules" style="padding:2rem">
+    {% for module in standalone_modules %}
+      <ic-data-row label="{{ module.name }}" value="{{ module.description }}">
+        <ic-button variant="secondary" href="{% url 'module_files' module.id %}">View Files</ic-button>
+      </ic-data-row>
+    {% endfor %}
+  </ic-data-list>
+{% endif %}
+
+{% endblock %}

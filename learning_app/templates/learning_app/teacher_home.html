@@ -1,0 +1,68 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+<ic-typography variant="h1" slot="heading">Teacher Home</ic-typography>
+{% for course in courses %}
+<ic-accordion heading="{{ course.name|upper }} - {{ course.description }}" style="margin:1rem;">
+  {% for module in course.modules.all %}
+  <ic-accordion heading="{{ module.name }}" style="margin:1rem;">
+    <ic-data-list>
+      <ic-data-row label="Description" value="{{ module.description }}"></ic-data-row>
+      <ic-data-row label="Manager"
+        value="{{ module.manager.get_full_name|default:module.manager.username }}"></ic-data-row>
+      <ic-data-row label="Deadline">
+        <ic-link slot="end-component" href="{% url 'set_module_deadline' module.id %}" variant="primary">
+          Set Deadline
+        </ic-link>
+      </ic-data-row>
+      <ic-data-row label="Module Files" value="">
+        <ic-link href="{% url 'module_files' module.id %}" slot="end-component">
+          View
+        </ic-link>
+      </ic-data-row>
+    </ic-data-list>
+    {% if module.manager == user %}
+    <ic-accordion heading="Enrolled Students">
+      <ic-data-list>
+
+        <ic-data-list>
+          {% for ms in module.modulestudent_set.all %}
+          <ic-data-row label="{{ ms.student.full_name|default:ms.student.username }}" value="{{ms.score}}">
+            <ic-link slot="end-component" href="{% url 'set_student_score' module.id ms.student.id %}"
+              variant="primary">Update Score</ic-link>
+          </ic-data-row>
+          {% empty %}
+          <ic-data-row label="No students enrolled" value=""></ic-data-row>
+          {% endfor %}
+        </ic-data-list>
+
+
+
+
+        <!-- {% for enrollment in module.enrollments.all %}
+          {% with student=enrollment.student %}
+            <ic-data-row label="Student" value="{{ student.get_full_name|default:student.username }}">
+              <form method="post" action="{% url 'edit_score' module.id student.id %}">
+                {% csrf_token %}
+                <input type="number" name="score" value="{{ enrollment.score }}" min="0" max="100" style="width:4rem;">
+                <ic-button type="submit" variant="primary">Save</ic-button>
+              </form>
+              <form method="post" action="{% url 'edit_deadline' module.id student.id %}">
+                {% csrf_token %}
+                <input type="date" name="deadline" value="{{ enrollment.deadline|date:'Y-m-d' }}">
+                <ic-button type="submit" variant="primary">Update Deadline</ic-button>
+              </form>
+            </ic-data-row>
+          {% endwith %}
+        {% endfor %} -->
+      </ic-data-list>
+    </ic-accordion>
+    <ic-link href="{% url 'set_module_deadline' module.id %}" variant="primary" slot="end-component">
+      Set Module Deadline
+    </ic-link>
+    {% endif %}
+  </ic-accordion>
+  {% endfor %}
+</ic-accordion>
+{% endfor %}
+{% endblock %}

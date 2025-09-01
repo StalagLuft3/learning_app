@@ -1,0 +1,18 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+<ic-data-list heading="Profile Information" style="padding:3rem">
+  {% if user.role == 'student' %}
+  <ic-data-row label="Status" value="{{ user.status|default:'No status set.' }}">
+    <ic-link href="{% url 'update_status' %}" slot="end-component">
+      Update Status
+    </ic-link>
+  </ic-data-row>
+  {% endif %}
+  <ic-data-row label="Username" value="{{ user.username }}"></ic-data-row>
+  <ic-data-row label="Role" value="{{ user.role }}"></ic-data-row>
+  <ic-data-row label="Full Name" value="{{ user.full_name }}"></ic-data-row>
+  <ic-data-row label="Date of Birth" value="{{ user.date_of_birth }}"></ic-data-row>
+</ic-data-list>
+
+{% endblock %}

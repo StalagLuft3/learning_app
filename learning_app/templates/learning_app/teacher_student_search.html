@@ -1,0 +1,40 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+
+  <ic-typography variant="h2" slot="heading">Search Students</ic-typography>
+  <form method="get" style="margin-bottom:2rem;">
+    <ic-text-field
+      label="Search by name or username"
+      name="q"
+      id="student-search"
+      value="{{ request.GET.q|default:'' }}"
+      style="width: 20rem; margin:1rem;">
+    </ic-text-field>
+    <button type="submit" variant="primary" style="margin:1rem;">Search</button>
+  </form>
+
+  <ic-data-list style="margin:1rem;">
+    {% for student in students %}
+      <ic-data-row label="{{ student.full_name|default:student.username }}">
+        <span>Email: {{ student.email }}</span>
+        {% if student.role == 'teacher' %}
+          <ic-link slot="end-component" href="{% url 'teacher_home_other' student.id %}" variant="primary">
+            View Teacher Home
+          </ic-link>
+        {% else %}
+          <ic-link slot="end-component" href="{% url 'student_home_other' student.id %}" variant="primary">
+            View Student Home
+          </ic-link>
+        {% endif %}
+      </ic-data-row>
+    {% empty %}
+      <ic-data-row label="No students found." value=""></ic-data-row>
+    {% endfor %}
+  </ic-data-list>
+
+  <ic-link href="{% url 'teacher_home' %}" variant="secondary" style="margin-top:1rem;">
+    Back to Teacher Home
+  </ic-link>
+
+{% endblock %}

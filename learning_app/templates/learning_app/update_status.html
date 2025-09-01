@@ -1,0 +1,12 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+<h1>Update Your Status</h1>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Update</button>
+</form>
+<a href="{% url 'student_home' %}">Back to Home</a>
+
+{% endblock %}

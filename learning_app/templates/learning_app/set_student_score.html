@@ -1,0 +1,11 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+<h2 style="padding:1rem;">Set Score for - {{ student.full_name }} in {{ module.name }}</h2>
+<form method="post" style="padding:1rem;">
+  {% csrf_token %}
+  <ic-text-field type="number" name="score" id="score" value="{{ ms.score|default_if_none:'' }}"></ic-text-field>
+  <button type="submit" variant="primary">Set Score</button>
+</form>
+
+{% endblock %}

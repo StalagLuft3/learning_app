@@ -1,0 +1,17 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+<h2>Add Module to {{ course.name }}</h2>
+<form method="post">
+  {% csrf_token %}
+  <label for="module_id">Select Module:</label>
+  <select name="module_id" id="module_id">
+    {% for module in modules %}
+      <option value="{{ module.id }}">{{ module.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Add Module</button>
+</form>
+<a href="{% url 'teacher_home' %}">Back to Teacher Home</a>
+
+{% endblock %}

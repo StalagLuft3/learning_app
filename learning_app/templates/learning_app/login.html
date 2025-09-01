@@ -1,0 +1,10 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+<form method="post" style="margin:1rem;">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" style="margin:1rem;">Login</button>
+</form>
+
+{% endblock %}

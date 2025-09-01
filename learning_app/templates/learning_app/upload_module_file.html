@@ -1,0 +1,11 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+<h2 style="margin: 1rem;">Upload File for {{ module.name }}</h2>
+<form method="post" enctype="multipart/form-data" style="margin: 1rem;">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" style="margin: 1rem;">Upload</button>
+</form>
+
+{% endblock %}

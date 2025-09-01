@@ -1,0 +1,29 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+
+<ic-typography variant="h2" slot="heading">Files for {{ module.name }}</ic-typography>
+<ic-data-list style="margin:1rem;">
+  {% for file in files %}
+  <ic-data-row label="{{ file.name }}"
+    value="Uploaded by {{ file.uploaded_by.full_name }} on {{ file.uploaded_at|date:'Y-m-d H:i' }}">
+    <ic-link slot="end-component" href="{{ file.file.url }}" target="_blank" variant="primary">
+      View
+    </ic-link>
+  </ic-data-row>
+  {% empty %}
+  <ic-data-row label="No files" value=""></ic-data-row>
+  {% endfor %}
+  {% if user == module.manager %}
+  <ic-data-row label="Upload Files" value="">
+    <ic-link href="{% url 'upload_module_file' module.id %}" slot="end-component" style="margin-top:1rem;">
+      Upload New File
+    </ic-link>
+  </ic-data-row>
+  {% endif %}
+</ic-data-list>
+{% if user == module.manager %}
+
+{% endif %}
+
+{% endblock %}

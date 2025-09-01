@@ -1,0 +1,12 @@
+{% extends 'learning_app/base.html' %}
+{% block content %}
+
+<h1 style="margin:2rem;">Forbidden</h1>
+<h2>You do not have access to this page.</h2>
+<script>
+  setTimeout(function() {
+    window.location.href = "{% url redirect_url %}";
+  }, 2000); // 2 seconds
+</script>
+
+{% endblock %}
