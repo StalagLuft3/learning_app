@@ -48,7 +48,7 @@ DATABASES = {
         'NAME': 'learningapp_db',
         'USER': 'postgres',
         'PASSWORD': 'password',
-        'HOST': 'localhost',
+        'HOST': '13.49.57.163',
         'PORT': '5432',
     }
 }
