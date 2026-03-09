@@ -198,10 +198,10 @@ async function myPathwayDetails(token){
     });
     
     const myPathwayDetails = myPathways.map(pathwayEmployee => [
-      pathwayEmployee.pathwayID,
-      pathwayEmployee.pathway.pathways_courses.map(pc => pc.courseID),
-      pathwayEmployee.pathway.pathways_assessments.map(pa => pa.assessmentID),
-      pathwayEmployee.pathway.pathways_experience_templates.map(pet => pet.experience_templateID)
+      pathwayEmployee.pathways.pathwayID,
+      pathwayEmployee.pathways.pathways_courses.map(pc => pc.courseID),
+      pathwayEmployee.pathways.pathways_assessments.map(pa => pa.assessmentID),
+      pathwayEmployee.pathways.pathways_experience_templates.map(pet => pet.experience_templateID)
     ]);
     
     return {
