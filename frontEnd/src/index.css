@@ -1,0 +1,27 @@
+@import "@ukic/fonts/dist/fonts.css";
+@import "@ukic/react/dist/core/core.css";
+@import "@ukic/react/dist/core/normalize.css";
+
+/* Dialog dropdown overflow fixes */
+ic-dialog .ic-dialog-content {
+  overflow: visible !important;
+  min-height: 400px;
+}
+
+ic-dialog .ic-dialog-body {
+  overflow: visible !important;
+}
+
+/* Ensure dropdowns can expand outside dialog bounds */
+ic-select {
+  position: relative;
+  z-index: 9999;
+}
+
+ic-select .ic-select-input-container {
+  z-index: 9999;
+}
+
+.ic-select-menu {
+  z-index: 10000 !important;
+}

@@ -1,0 +1,958 @@
+import React, { useEffect, useState } from "react";
+import { IcButton, IcCard, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcRadioGroup, IcRadioOption } from "@ukic/react";
+import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckCircle, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiCheckboxMarkedCirclePlusOutline, mdiCheckboxMarkedCircleOutline, mdiDelete } from "@mdi/js";
+import SlottedSVGTemplate from "../components/slottedSVGTemplate";
+
+import Header from "../components/ContentManagementHeader";
+import Footer from "../components/ITRFooter";
+import { divContainer, cardContainer } from "../styles/containerLayout";
+import { updateItemStatus } from "../commonFunctions/commonFeedbackUtilities";
+import { getStatusDisplay, canUpdateStatus } from "../commonFunctions/statusUtilities";
+import { fetchData } from "../commonFunctions/api";
+
+const AssessmentManagement = () => {
+  const [managedAssessments, setManagedAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [tempStatus, setTempStatus] = useState('');
+  const [tempScore, setTempScore] = useState('');
+  const [tempCompletionDate, setTempCompletionDate] = useState('');
+  const [tempAccreditationDate, setTempAccreditationDate] = useState('');
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState('success');
+  const [showOnlyAwaiting, setShowOnlyAwaiting] = useState(false);
+  const [showOnlyNeedingReview, setShowOnlyNeedingReview] = useState(false);
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState(null);
+
+  // Dialog states for editing and creating
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [selectedAssessment, setSelectedAssessment] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [createFormData, setCreateFormData] = useState({});
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isCreateMode, setIsCreateMode] = useState(false);
+
+  // Set initial active tab when assessments load
+  useEffect(() => {
+    if (managedAssessments.length > 0 && !activeTab) {
+      setActiveTab(managedAssessments[0].assessmentID);
+    }
+  }, [managedAssessments, activeTab]);
+
+  useEffect(() => {
+    loadManagedAssessments();
+  }, []);
+
+  const loadManagedAssessments = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current user info
+      const userData = await fetchData("/Auth/user");
+      setCurrentUser(userData);
+      
+      if (!userData?.employeeID) {
+        console.warn('No current user or employeeID available');
+        return;
+      }
+      
+      const data = await fetchData(`/ManageContents/assessments/${userData.employeeID}`);
+      console.log('Managed assessments API response:', data);
+      console.log('User employeeID:', userData.employeeID);
+      
+      const assessments = Array.isArray(data?.assessments) ? data.assessments : [];
+      console.log('Processed assessments:', assessments);
+      setManagedAssessments(assessments);
+      
+      // Set first assessment as active tab if available
+      if (assessments.length > 0) {
+        const firstAssessmentID = assessments[0].assessmentID;
+        setActiveTab(firstAssessmentID);
+        console.log('Setting initial active tab to:', firstAssessmentID);
+      }
+    } catch (error) {
+      console.error('Failed to load managed assessments:', error);
+      console.error('Error details:', error.message);
+      setManagedAssessments([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Enrollment editing handlers
+  const handleStartEdit = (item) => {
+    setEditingItemId(item.employee_assessmentID);
+    setTempStatus(item.currentStatus || '');
+    setTempScore(item.score || '');
+    setTempCompletionDate(item.completionDate || '');
+    setTempAccreditationDate(item.accreditationDate || '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingItemId(null);
+    setTempStatus('');
+    setTempScore('');
+    setTempCompletionDate('');
+    setTempAccreditationDate('');
+  };
+
+  const handleSubmitUpdate = async (item, newStatus, score = null, completionDate = null, accreditationDate = null) => {
+    try {
+      setSubmitting(true);
+      
+      const updateData = { 
+        enrollmentId: item.employee_assessmentID,
+        newStatus 
+      };
+      
+      if (score !== null && score !== '') {
+        updateData.score = parseInt(score) || 0;
+      }
+      
+      if (completionDate !== null && completionDate !== '') {
+        updateData.completionDate = completionDate;
+      }
+      
+      if (accreditationDate !== null && accreditationDate !== '') {
+        updateData.accreditationDate = accreditationDate;
+      }
+
+      const response = await fetch('http://localhost:5000/ManageContents/updateAssessmentEnrollment', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updateData)
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        if (newStatus === 'Withdrawn') {
+          setAlertMessage(`${item.username} has been withdrawn from the assessment and removed from their record.`);
+        } else {
+          setAlertMessage(`${item.username} has been marked as "${newStatus}"`);
+        }
+        setAlertType('success');
+        setAlertVisible(true);
+        
+        setTimeout(() => {
+          setAlertVisible(false);
+        }, 3000);
+        
+        await loadManagedAssessments();
+        handleCancelEdit();
+        
+      } else {
+        throw new Error(result.error || 'Failed to update enrollment');
+      }
+      
+    } catch (error) {
+      console.error('Failed to update enrollment:', error);
+      setAlertMessage(`Failed to update enrollment: ${error.message || 'Please try again.'}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 5000);
+      handleCancelEdit();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Dialog form handlers for assessment editing
+  const handleFormChange = (field, value) => {
+    const updatedFormData = {
+      ...editFormData,
+      [field]: value
+    };
+    
+    setEditFormData(updatedFormData);
+    
+    // Check if changes were made compared to original assessment
+    if (selectedAssessment) {
+      const hasChanges = Object.keys(updatedFormData).some(key => {
+        const oldValue = selectedAssessment[key === 'assessmentName' ? 'name' : key] || '';
+        const newValue = updatedFormData[key] || '';
+        return oldValue.toString() !== newValue.toString();
+      });
+      setHasChanges(hasChanges);
+    }
+  };
+
+  const handleUpdateSubmit = async () => {
+    if (!selectedAssessment) return;
+    
+    try {
+      setSubmitting(true);
+      
+      const updateData = {
+        assessmentID: selectedAssessment.assessmentID,
+        name: editFormData.assessmentName,
+        description: editFormData.assessmentDescription,
+        duration: parseFloat(editFormData.duration) || 0,
+        delivery_method: editFormData.deliveryMethod,
+        delivery_location: editFormData.deliveryLocation,
+        max_score: parseInt(editFormData.maxScore) || 0,
+        passing_score: parseInt(editFormData.passingScore) || 0,
+        expiry: editFormData.expiry ? parseInt(editFormData.expiry) : null
+      };
+      
+      const response = await fetch('http://localhost:5000/ManageContents/updateAssessment', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(updateData)
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setAlertMessage('Assessment updated successfully!');
+        setAlertType('success');
+        setAlertVisible(true);
+        setEditDialogOpen(false);
+        
+        setTimeout(() => {
+          setAlertVisible(false);
+        }, 3000);
+        
+        await loadManagedAssessments();
+        
+      } else {
+        throw new Error(result.error || 'Failed to update assessment');
+      }
+      
+    } catch (error) {
+      console.error('Failed to update assessment:', error);
+      setAlertMessage(`Failed to update assessment: ${error.message || 'Please try again.'}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 5000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedAssessment) return;
+    
+    try {
+      setSubmitting(true);
+      
+      const response = await fetch(`http://localhost:5000/courseCatalogue/deleteAssessment/${selectedAssessment.assessmentID}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setAlertMessage('Assessment deleted successfully!');
+        setAlertType('success');
+        setAlertVisible(true);
+        setDeleteConfirmOpen(false);
+        setEditDialogOpen(false);
+        
+        setTimeout(() => {
+          setAlertVisible(false);
+        }, 3000);
+        
+        await loadManagedAssessments();
+        
+      } else {
+        throw new Error(result.error || 'Failed to delete assessment');
+      }
+      
+    } catch (error) {
+      console.error('Failed to delete assessment:', error);
+      setAlertMessage(`Failed to delete assessment: ${error.message || 'Please try again.'}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 5000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Dialog form handlers for assessment creation
+  const handleCreateFormChange = (field, value) => {
+    const updatedFormData = {
+      ...createFormData,
+      [field]: value
+    };
+    
+    setCreateFormData(updatedFormData);
+    
+    // Check if form has required fields filled
+    const hasRequiredFields = updatedFormData.assessmentName && 
+                             updatedFormData.assessmentDescription && 
+                             updatedFormData.duration && 
+                             updatedFormData.maxScore && 
+                             updatedFormData.passingScore;
+    setHasChanges(hasRequiredFields);
+  };
+
+  const handleCreateSubmit = async () => {
+    try {
+      setSubmitting(true);
+      
+      const createData = {
+        name: createFormData.assessmentName,
+        description: createFormData.assessmentDescription,
+        duration: parseFloat(createFormData.duration) || 0,
+        delivery_method: createFormData.deliveryMethod || 'Online Assessment',
+        delivery_location: createFormData.deliveryLocation || 'High',
+        max_score: parseInt(createFormData.maxScore) || 0,
+        passing_score: parseInt(createFormData.passingScore) || 0,
+        expiry: createFormData.expiry ? parseInt(createFormData.expiry) : null
+      };
+      
+      const response = await fetch('http://localhost:5000/ManageContents/createAssessment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(createData)
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setAlertMessage('Assessment created successfully!');
+        setAlertType('success');
+        setAlertVisible(true);
+        setCreateDialogOpen(false);
+        setIsCreateMode(false);
+        
+        setTimeout(() => {
+          setAlertVisible(false);
+        }, 3000);
+        
+        await loadManagedAssessments();
+        
+      } else {
+        throw new Error(result.error || 'Failed to create assessment');
+      }
+      
+    } catch (error) {
+      console.error('Failed to create assessment:', error);
+      setAlertMessage(`Failed to create assessment: ${error.message || 'Please try again.'}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 5000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return <IcTypography variant="body">Loading managed assessments...</IcTypography>;
+  }
+
+  if (managedAssessments.length === 0) {
+    return (
+      <>
+        <Header />
+        <IcHero
+          heading="Assessment Management"
+          secondaryHeading="No assessments to manage"
+          secondarySubheading="You are not currently assigned as a manager for any assessments."
+          aligned="full-width">
+          <IcButton 
+            slot="interaction"
+            variant="primary"
+            onClick={() => {
+              console.log('Creating new assessment');
+              setIsCreateMode(true);
+              setCreateFormData({
+                assessmentName: '',
+                assessmentDescription: '',
+                duration: '',
+                deliveryMethod: '',
+                deliveryLocation: '',
+                maxScore: '',
+                passingScore: '',
+                expiry: ''
+              });
+              setCreateDialogOpen(true);
+            }}
+          >
+            <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
+            Create Assessment
+          </IcButton>
+        </IcHero>
+        <Footer />
+        
+        {/* Dialogs - available even when no assessments */}
+        {renderDialogs()}
+      </>
+    );
+  }
+
+  const renderDialogs = () => (
+    <>
+      {/* Create Assessment Dialog */}
+      <IcDialog
+        size="large"
+        open={createDialogOpen}
+        closeOnBackdropClick={false}
+        heading="Create New Assessment"
+        disable-height-constraint='true'
+        buttons="false"
+        onIcDialogClosed={() => {
+          setCreateDialogOpen(false);
+          setIsCreateMode(false);
+        }}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleCreateSubmit();
+        }}>
+          <IcTextField 
+            value={createFormData.assessmentName || ''} 
+            onIcInput={(e) => handleCreateFormChange('assessmentName', e.detail.value)}
+            label="Assessment Name" 
+            type="text" 
+            minCharacters={4} 
+            maxCharcters={64} 
+            fullWidth="full-width" 
+            required 
+          />
+          <IcTextField 
+            value={createFormData.assessmentDescription || ''} 
+            onIcInput={(e) => handleCreateFormChange('assessmentDescription', e.detail.value)}
+            label="Assessment Description" 
+            rows={3} 
+            type="text" 
+            minCharacters={16} 
+            maxCharcters={256} 
+            fullWidth="full-width" 
+            required 
+          />
+          <IcTextField
+            value={createFormData.duration || ''}
+            onIcInput={(e) => handleCreateFormChange('duration', e.detail.value)}
+            label="Duration (days)"
+            type="number"
+            step="0.125"
+            min="0.125"
+            helperText="Increments of 0.125 Days (1 hour)"
+            fullWidth="full-width"
+            required
+          />
+          <IcSelect
+            value={createFormData.deliveryMethod || ''}
+            onIcChange={(e) => handleCreateFormChange('deliveryMethod', e.detail.value)}
+            label="Delivery Method"
+            fullWidth="full-width"
+            options={[
+              { label: 'Online Assessment', value: 'Online Assessment' },
+              { label: 'Written Assessment', value: 'Written Assessment' },
+              { label: 'Practical Assessment', value: 'Practical Assessment' },
+              { label: 'Interview Assessment', value: 'Interview Assessment' }
+            ]}
+          />
+          <IcSelect
+            value={createFormData.deliveryLocation || ''}
+            onIcChange={(e) => handleCreateFormChange('deliveryLocation', e.detail.value)}
+            label="Delivery Location"
+            fullWidth="full-width"
+            options={[
+              { label: 'High', value: 'High' },
+              { label: 'Low', value: 'Low' }
+            ]}
+          />
+          <IcTextField
+            value={createFormData.maxScore || ''}
+            onIcInput={(e) => handleCreateFormChange('maxScore', e.detail.value)}
+            label="Maximum Score"
+            type="number"
+            step="1"
+            min="0"
+            fullWidth="full-width"
+            required
+          />
+          <IcTextField
+            value={createFormData.passingScore || ''}
+            onIcInput={(e) => handleCreateFormChange('passingScore', e.detail.value)}
+            label="Passing Score"
+            type="number"
+            step="1"
+            min="0"
+            fullWidth="full-width"
+            required
+          />
+          <IcTextField
+            value={createFormData.expiry || ''}
+            onIcInput={(e) => handleCreateFormChange('expiry', e.detail.value)}
+            label="Expiry (years)"
+            type="number"
+            step="1"
+            min="0"
+            fullWidth="full-width"
+          />
+          
+          <br />
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
+            <IcButton 
+              variant="tertiary" 
+              onClick={() => {
+                setCreateDialogOpen(false);
+                setIsCreateMode(false);
+              }}
+              type="button"
+            >
+              Cancel
+            </IcButton>
+            <IcButton 
+              variant="primary" 
+              type="submit"
+              disabled={!hasChanges}
+            >
+              <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
+              {hasChanges ? 'Create Assessment' : 'Fill Required Fields'}
+            </IcButton>
+          </div>
+        </form>
+      </IcDialog>
+
+      {/* Edit Assessment Dialog */}
+      <IcDialog
+        size="large"
+        open={editDialogOpen}
+        closeOnBackdropClick={false}
+        heading="Edit Assessment"
+        disable-height-constraint='true'
+        buttons="false"
+        onIcDialogClosed={() => setEditDialogOpen(false)}>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleUpdateSubmit();
+        }}>
+          <IcTextField 
+            value={editFormData.assessmentName || ''} 
+            onIcInput={(e) => handleFormChange('assessmentName', e.detail.value)}
+            label="Assessment Name" 
+            type="text" 
+            minCharacters={4} 
+            maxCharcters={64} 
+            fullWidth="full-width" 
+            required 
+          />
+          <IcTextField 
+            value={editFormData.assessmentDescription || ''} 
+            onIcInput={(e) => handleFormChange('assessmentDescription', e.detail.value)}
+            label="Assessment Description" 
+            rows={3} 
+            type="text" 
+            minCharacters={16} 
+            maxCharcters={256} 
+            fullWidth="full-width" 
+            required 
+          />
+          <IcTextField
+            value={editFormData.duration || ''}
+            onIcInput={(e) => handleFormChange('duration', e.detail.value)}
+            label="Duration (days)"
+            type="number"
+            step="0.125"
+            min="0.125"
+            helperText="Increments of 0.125 Days (1 hour)"
+            fullWidth="full-width"
+            required
+          />
+          <IcSelect
+            value={editFormData.deliveryMethod || ''}
+            onIcChange={(e) => handleFormChange('deliveryMethod', e.detail.value)}
+            label="Delivery Method"
+            fullWidth="full-width"
+            options={[
+              { label: 'Online Assessment', value: 'Online Assessment' },
+              { label: 'Written Assessment', value: 'Written Assessment' },
+              { label: 'Practical Assessment', value: 'Practical Assessment' },
+              { label: 'Interview Assessment', value: 'Interview Assessment' }
+            ]}
+          />
+          <IcSelect
+            value={editFormData.deliveryLocation || ''}
+            onIcChange={(e) => handleFormChange('deliveryLocation', e.detail.value)}
+            label="Delivery Location"
+            fullWidth="full-width"
+            options={[
+              { label: 'High', value: 'High' },
+              { label: 'Low', value: 'Low' }
+            ]}
+          />
+          <IcTextField
+            value={editFormData.maxScore || ''}
+            onIcInput={(e) => handleFormChange('maxScore', e.detail.value)}
+            label="Maximum Score"
+            type="number"
+            step="1"
+            min="0"
+            fullWidth="full-width"
+            required
+          />
+          <IcTextField
+            value={editFormData.passingScore || ''}
+            onIcInput={(e) => handleFormChange('passingScore', e.detail.value)}
+            label="Passing Score"
+            type="number"
+            step="1"
+            min="0"
+            fullWidth="full-width"
+            required
+          />
+          <IcTextField
+            value={editFormData.expiry || ''}
+            onIcInput={(e) => handleFormChange('expiry', e.detail.value)}
+            label="Expiry (years)"
+            type="number"
+            step="1"
+            min="0"
+            fullWidth="full-width"
+          />
+          
+          <br />
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'space-between' }}>
+            <IcButton 
+              variant="destructive" 
+              onClick={() => setDeleteConfirmOpen(true)}
+              type="button"
+            >
+              <SlottedSVGTemplate mdiIcon={mdiDelete} />
+              Delete Assessment
+            </IcButton>
+            <IcButton 
+              variant="primary" 
+              type="submit"
+              disabled={!hasChanges}
+            >
+              <SlottedSVGTemplate mdiIcon={mdiPencil} />
+              {hasChanges ? 'Update Assessment' : 'No Changes'}
+            </IcButton>
+          </div>
+        </form>
+      </IcDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <IcDialog
+        size="small"
+        open={deleteConfirmOpen}
+        closeOnBackdropClick={false}
+        heading="Delete Assessment"
+        onIcDialogClosed={() => setDeleteConfirmOpen(false)}>
+        <IcTypography variant="body">
+          Are you sure you want to delete this assessment? This action cannot be undone.
+        </IcTypography>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', marginTop: '16px' }}>
+          <IcButton 
+            variant="tertiary" 
+            onClick={() => setDeleteConfirmOpen(false)}
+          >
+            Cancel
+          </IcButton>
+          <IcButton 
+            variant="destructive" 
+            onClick={handleDelete}
+          >
+            Delete Assessment
+          </IcButton>
+        </div>
+      </IcDialog>
+    </>
+  );
+
+  return (
+    <>
+      <Header />
+      <IcHero
+        heading="Assessment Management"
+        subheading="Manage assessment details and student enrollments"
+        secondaryHeading={`Managing ${managedAssessments.length} assessment${managedAssessments.length === 1 ? '' : 's'}`}
+        aligned="full-width">
+        <IcButton 
+          slot="interaction"
+          variant="primary"
+          onClick={() => {
+            console.log('Creating new assessment');
+            setIsCreateMode(true);
+            setCreateFormData({
+              assessmentName: '',
+              assessmentDescription: '',
+              duration: '',
+              deliveryMethod: '',
+              deliveryLocation: '',
+              maxScore: '',
+              passingScore: '',
+              expiry: ''
+            });
+            setCreateDialogOpen(true);
+          }}
+        >
+          <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
+          Create Assessment
+        </IcButton>
+        {managedAssessments.length > 0 && activeTab && (
+          <IcButton 
+            slot="interaction"
+            variant="secondary"
+            onClick={() => {
+              const assessment = managedAssessments.find(a => a.assessmentID === activeTab);
+              if (assessment) {
+                setSelectedAssessment(assessment);
+                setEditFormData({
+                  assessmentName: assessment.name || '',
+                  assessmentDescription: assessment.description || '',
+                  duration: assessment.duration || '',
+                  deliveryMethod: assessment.delivery_method || '',
+                  deliveryLocation: assessment.delivery_location || '',
+                  maxScore: assessment.max_score || '',
+                  passingScore: assessment.passing_score || '',
+                  expiry: assessment.expiry || ''
+                });
+                setHasChanges(false);
+                setEditDialogOpen(true);
+              }
+            }}
+          >
+            <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCircleOutline} />
+            Edit Assessment Details
+          </IcButton>
+        )}
+      </IcHero>
+      
+      {alertVisible && (
+        <IcAlert
+          variant={alertType}
+          heading={alertType === 'success' ? 'Success' : 'Error'}
+          message={alertMessage}
+          dismissible={true}
+          onIcDismiss={() => setAlertVisible(false)}
+          style={{ margin: '16px', marginBottom: '24px' }}
+        />
+      )}
+
+      <IcTabContext>
+        <IcTabGroup 
+          label="Assessment Management" 
+          style={{ margin: '16px' }} 
+          onIcTabSelect={(e) => {
+            console.log('Tab selected:', e.detail.value);
+            setActiveTab(parseInt(e.detail.value));
+          }}
+        >
+          {managedAssessments.map((assessment) => {
+            // Calculate awaiting count for this assessment
+            const awaitingCount = assessment.enrollments.filter(enrollment => {
+              const status = getStatusDisplay(enrollment);
+              return status?.status !== 'Passed';
+            }).length;
+
+            return (
+              <IcTab 
+                key={assessment.assessmentID} 
+                value={assessment.assessmentID.toString()}
+                onClick={() => {
+                  console.log('Tab clicked manually:', assessment.assessmentID);
+                  setActiveTab(assessment.assessmentID);
+                }}
+              >
+                <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                {assessment.name}
+                {awaitingCount > 0 && (
+                  <IcBadge 
+                    textLabel={awaitingCount.toString()} 
+                    variant="info" 
+                    style={{ marginLeft: '8px' }}
+                  />
+                )}
+              </IcTab>
+            );
+          })}
+        </IcTabGroup>
+
+        {managedAssessments.map((assessment) => {
+          const awaitingEnrollments = assessment.enrollments?.filter(enrollment => {
+            const status = getStatusDisplay(enrollment);
+            return status?.status !== 'Passed';
+          }) || [];
+          
+          const currentEnrollments = showOnlyAwaiting ? awaitingEnrollments : (assessment.enrollments || []);
+          
+          return (
+            <IcTabPanel key={assessment.assessmentID} value={assessment.assessmentID.toString()}>
+              {/* Enrollments Section */}
+              <div style={{ padding: 'var(--ic-space-xs)', width: '85%' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+                  <IcTypography variant="h3">
+                    Student Enrollments ({assessment.enrollments.length})
+                  </IcTypography>
+                  
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <IcButton 
+                      variant={showOnlyAwaiting ? "primary" : "secondary"}
+                      onClick={() => setShowOnlyAwaiting(!showOnlyAwaiting)}
+                      size="small"
+                    >
+                      <SlottedSVGTemplate mdiIcon={showOnlyAwaiting ? mdiToggleSwitch : mdiToggleSwitchOff} />
+                      Awaiting Review ({awaitingEnrollments.length})
+                    </IcButton>
+                  </div>
+                </div>
+
+                {currentEnrollments.length === 0 ? (
+                  <IcTypography variant="body" style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
+                    {showOnlyAwaiting 
+                      ? 'No enrollments awaiting review for this assessment.' 
+                      : 'No student enrollments found for this assessment.'
+                    }
+                  </IcTypography>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {currentEnrollments.map((enrollment, index) => {
+                      const status = getStatusDisplay(enrollment);
+                      const canUpdate = canUpdateStatus(enrollment, currentUser);
+
+                      return (
+                        <IcCard 
+                          key={index}
+                          style={cardContainer}
+                          heading={enrollment.username || 'Unknown Student'}
+                          subheading={`${enrollment.role || 'Unknown Role'} | Enrolled: ${enrollment.recordDate || 'Unknown Date'}${enrollment.score ? ` | Score: ${enrollment.score}/${assessment.max_score}` : ''}${enrollment.accreditationDate ? ` | Accredited: ${enrollment.accreditationDate}` : ''}`}
+                          message={`Current Status: ${status?.status || 'Unknown'}`}
+                        >
+                          <SlottedSVGTemplate mdiIcon={mdiAccountCheck} />
+                          <IcStatusTag 
+                            slot="interaction-button" 
+                            label={status?.status || 'Unknown'} 
+                            status={status?.color || 'neutral'} 
+                          />
+
+                          <div slot="interaction-controls" style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}>
+                              {editingItemId === enrollment.employee_assessmentID ? (
+                                <div style={{ 
+                                  display: "flex", 
+                                  flexDirection: "column",
+                                  gap: "12px", 
+                                  alignItems: "flex-start",
+                                  width: "100%"
+                                }}>
+                                  <div style={{
+                                    display: "flex",
+                                    gap: "12px",
+                                    flexWrap: "wrap",
+                                    alignItems: "flex-end",
+                                    width: "100%"
+                                  }}>
+                                    <IcSelect
+                                      label="Status"
+                                      value={tempStatus}
+                                      onIcChange={(e) => setTempStatus(e.detail.value)}
+                                      options={[
+                                        { label: 'Enrolled', value: 'Enrolled' },
+                                        { label: 'Expired', value: 'Expired' },
+                                        { label: 'Attempted', value: 'Attempted' },
+                                        { label: 'Passed', value: 'Passed' },
+                                        { label: 'Withdraw (Remove from Record)', value: 'Withdrawn' }
+                                      ]}
+                                      style={{ minWidth: '150px', flex: '1' }}
+                                    />
+                                    <IcTextField
+                                      label="Score"
+                                      value={tempScore}
+                                      onIcInput={(e) => setTempScore(e.detail.value)}
+                                      type="number"
+                                      max={assessment.max_score}
+                                      style={{ minWidth: '100px', flex: '0 0 auto' }}
+                                    />
+                                    <IcTextField
+                                      label="Completion Date"
+                                      value={tempCompletionDate}
+                                      onIcInput={(e) => setTempCompletionDate(e.detail.value)}
+                                      type="date"
+                                      style={{ minWidth: '160px', flex: '0 0 auto' }}
+                                    />
+                                    <IcTextField
+                                      label="Accreditation Date"
+                                      value={tempAccreditationDate}
+                                      onIcInput={(e) => setTempAccreditationDate(e.detail.value)}
+                                      type="date"
+                                      style={{ minWidth: '160px', flex: '0 0 auto' }}
+                                    />
+                                  </div>
+                                  <div style={{
+                                    display: "flex",
+                                    gap: "8px",
+                                    alignItems: "center"
+                                  }}> 
+                                  <IcButton 
+                                    variant="primary"
+                                    size="small"
+                                    onClick={() => handleSubmitUpdate(enrollment, tempStatus, tempScore, tempCompletionDate, tempAccreditationDate)}
+                                    disabled={submitting}
+                                  >
+                                    <SlottedSVGTemplate mdiIcon={mdiCheck} />
+                                    Save
+                                  </IcButton>
+                                  <IcButton 
+                                    variant="secondary"
+                                    size="small"
+                                    onClick={handleCancelEdit}
+                                  >
+                                    <SlottedSVGTemplate mdiIcon={mdiClose} />
+                                    Cancel
+                                  </IcButton>
+                                  </div>
+                                </div>
+                              ) : (
+                                <IcButton 
+                                  variant="primary"
+                                  size="small"
+                                  onClick={() => handleStartEdit(enrollment)}
+                                >
+                                  Update Status
+                                  <SlottedSVGTemplate mdiIcon={mdiAccountCheck} />
+                                </IcButton>
+                              )}
+                            </div>
+                        </IcCard>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </IcTabPanel>
+          );
+        })}
+      </IcTabContext>
+      
+      <Footer />
+      
+      {/* Dialogs - always available */}
+      {renderDialogs()}
+    </>
+  );
+};
+
+export default AssessmentManagement;
