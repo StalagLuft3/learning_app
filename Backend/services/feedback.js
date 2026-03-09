@@ -253,9 +253,7 @@ async function updateItemStatus(itemType, itemId, updateData) {
           if (updateData.newStatus) {
             assessmentData.currentStatus = updateData.newStatus;
           }
-          if (updateData.accreditationDate) {
-            assessmentData.accreditationDate = updateData.accreditationDate;
-          }
+          // Remove accreditationDate logic - using completionDate instead
           if (updateData.attemptDate) {
             assessmentData.attemptDate = updateData.attemptDate;
           }

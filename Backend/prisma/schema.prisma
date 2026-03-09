@@ -13,14 +13,14 @@ model employees {
   role                  String
   email                 String
   password              String
+  managed_assessments   assessments[]           @relation("AssessmentManager")
+  managed_courses       courses[]               @relation("CourseManager")
   employees_assessments employees_assessments[]
+  employees_courses     employees_courses[]
   employees_experiences employees_experiences[] @relation("EmployeeExperiences")
   referee_experiences   employees_experiences[] @relation("RefereeExperiences")
-  employees_courses     employees_courses[]
-  pathways_employees    pathways_employees[]
-  managed_courses       courses[]               @relation("CourseManager")
-  managed_assessments   assessments[]           @relation("AssessmentManager")
   managed_pathways      pathways[]              @relation("PathwayManager")
+  pathways_employees    pathways_employees[]
 
   @@map("employees")
 }
@@ -36,24 +36,24 @@ model assessments {
   max_score             Int
   passing_score         Int
   expiry                Int?
+  manager               employees               @relation("AssessmentManager", fields: [manager_ID], references: [employeeID])
   employees_assessments employees_assessments[]
   pathways_assessments  pathways_assessments[]
-  manager               employees               @relation("AssessmentManager", fields: [manager_ID], references: [employeeID])
 
   @@map("assessments")
 }
 
 model courses {
-  courseID         Int                @id @default(autoincrement())
-  courseName       String
-  description      String?
-  delivery_method  String?
+  courseID          Int                 @id @default(autoincrement())
+  courseName        String
+  description       String?
+  delivery_method   String?
   delivery_location String?
-  duration         Int
-  courseManagerID  Int
+  duration          Int
+  courseManagerID   Int
+  manager           employees           @relation("CourseManager", fields: [courseManagerID], references: [employeeID])
   employees_courses employees_courses[]
-  pathways_courses pathways_courses[]
-  manager          employees          @relation("CourseManager", fields: [courseManagerID], references: [employeeID])
+  pathways_courses  pathways_courses[]
 
   @@map("courses")
 }
@@ -64,10 +64,10 @@ model employees_courses {
   courseID          Int
   currentStatus     String
   recordDate        String
-  score             Int?
   completionDate    String?
-  employees         employees @relation(fields: [employeeID], references: [employeeID])
+  score             Int?
   courses           courses   @relation(fields: [courseID], references: [courseID])
+  employees         employees @relation(fields: [employeeID], references: [employeeID])
 
   @@map("employees_courses")
 }
@@ -86,10 +86,9 @@ model employees_assessments {
   employeeID            Int
   assessmentID          Int
   currentStatus         String?
-  score                 Int?
   recordDate            String
-  accreditationDate     String?
   completionDate        String?
+  score                 Int?
   assessments           assessments @relation(fields: [assessmentID], references: [assessmentID])
   employees             employees   @relation(fields: [employeeID], references: [employeeID])
 
@@ -97,7 +96,7 @@ model employees_assessments {
 }
 
 model employees_experiences {
-  employee_experienceID Int       @id @default(autoincrement())
+  employee_experienceID Int        @id @default(autoincrement())
   experience_templateID Int?
   experienceDescription String
   duration              Float
@@ -106,7 +105,7 @@ model employees_experiences {
   employeeText          String?
   refereeID             Int?
   refereeText           String?
-  employees             employees @relation("EmployeeExperiences", fields: [employeeID], references: [employeeID])
+  employees             employees  @relation("EmployeeExperiences", fields: [employeeID], references: [employeeID])
   referee               employees? @relation("RefereeExperiences", fields: [refereeID], references: [employeeID])
 
   @@map("employees_experiences")
@@ -130,11 +129,11 @@ model pathways {
   enrollment_status             String?
   some_numeric_value            Int?
   record_date                   DateTime?
+  manager                       employees                       @relation("PathwayManager", fields: [pathwayManagerID], references: [employeeID])
   pathways_assessments          pathways_assessments[]
   pathways_courses              pathways_courses[]
   pathways_employees            pathways_employees[]
   pathways_experience_templates pathways_experience_templates[]
-  manager                       employees                       @relation("PathwayManager", fields: [pathwayManagerID], references: [employeeID])
 
   @@map("pathways")
 }

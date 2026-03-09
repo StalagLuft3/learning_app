@@ -339,7 +339,7 @@ router.put('/bulkUpdateCourseEnrollments', async function(req, res) {
 // PUT /bulkUpdateAssessmentEnrollments - Bulk update assessment enrollments
 router.put('/bulkUpdateAssessmentEnrollments', async function(req, res) {
   try {
-    const { enrollmentIds, newStatus, score, accreditationDate } = req.body;
+    const { enrollmentIds, newStatus, score } = req.body;
     const token = req.cookies["x-auth-token"];
     
     console.log('=== BULK UPDATE ASSESSMENT ENROLLMENTS REQUEST ===');
@@ -365,9 +365,7 @@ router.put('/bulkUpdateAssessmentEnrollments', async function(req, res) {
         if (score !== undefined) {
           updateData.score = score;
         }
-        if (accreditationDate) {
-          updateData.accreditationDate = accreditationDate;
-        }
+        // Remove accreditationDate logic - using completionDate instead
         
         const result = await manageContents.updateAssessmentEnrollment(enrollmentId, updateData);
         results.push({ enrollmentId, success: true, result });

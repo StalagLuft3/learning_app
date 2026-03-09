@@ -96,7 +96,7 @@ async function loadRecord(token){
         recordDate: enrollment?.recordDate,
         scoreAchieved: enrollment?.score, // Fix: mapping from 'score' field in database
         completionDate: enrollment?.completionDate, // Add missing completion date
-        accreditationDate: enrollment?.accreditationDate, // Add missing accreditation date
+        // Remove accreditationDate - using completionDate instead
         username: assessment.manager?.username,
         role: assessment.manager?.role,
         // Mark as assessment for frontend logic

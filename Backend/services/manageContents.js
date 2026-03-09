@@ -447,7 +447,6 @@ async function getManagedAssessments(managerId) {
         currentStatus: enrollment.currentStatus,
         recordDate: enrollment.recordDate,
         score: enrollment.score || null,
-        accreditationDate: enrollment.accreditationDate || null,
         completionDate: enrollment.completionDate || null,
         username: enrollment.employees.username,
         role: enrollment.employees.role
@@ -538,9 +537,7 @@ async function updateAssessmentEnrollment(enrollmentId, updateData) {
       updateFields.recordDate = updateData.recordDate;
     }
     
-    if (updateData.accreditationDate) {
-      updateFields.accreditationDate = updateData.accreditationDate;
-    }
+    // Remove accreditationDate logic - using completionDate instead
     
     if (updateData.completionDate) {
       updateFields.completionDate = updateData.completionDate;
