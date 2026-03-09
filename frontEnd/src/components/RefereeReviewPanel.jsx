@@ -15,7 +15,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
   const [tempStatus, setTempStatus] = useState('');
   const [tempScore, setTempScore] = useState('');
   const [tempFeedback, setTempFeedback] = useState('');
-  const [tempAccreditationDate, setTempAccreditationDate] = useState('');
+  // Remove accreditationDate state - using completionDate instead
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('success');
@@ -70,7 +70,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
     setTempStatus(item.currentStatus || '');
     setTempScore('');
     setTempFeedback('');
-    setTempAccreditationDate('');
+    // Remove accreditationDate reset - using completionDate instead
     
     console.log('State updated. New values should be:', {
       editingItemId: itemId,
@@ -83,7 +83,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
     setTempStatus('');
     setTempScore('');
     setTempFeedback('');
-    setTempAccreditationDate('');
+    // Remove accreditationDate reset - using completionDate instead
   };
 
   const handleSubmitInlineUpdate = async (item, type, newStatus = null) => {
@@ -119,13 +119,9 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
           const isPassing = score >= passingScore;
           updateData.newStatus = isPassing ? 'Passed' : 'Attempted';
           // Add accreditation date if provided and if it's a pass
-          if (tempAccreditationDate && isPassing) {
-            updateData.accreditationDate = tempAccreditationDate;
-          }
+          // Remove accreditationDate logic - using completionDate instead
           // Save attempt date for all attempts (pass or fail)
-          if (tempAccreditationDate) {
-            updateData.attemptDate = tempAccreditationDate;
-          }
+          // Remove accreditationDate logic - using completionDate instead
         }
         itemId = item.employee_assessmentID;
       }
@@ -390,8 +386,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
                             <IcTextField
                               label="Accreditation Date (YYYY-MM-DD)"
                               type="date"
-                              value={tempAccreditationDate}
-                              onIcInput={(e) => setTempAccreditationDate(e.detail.value)}
+                              // Remove accreditationDate fields - using completionDate instead
                               style={{ 
                                 width: '200px',
                                 maxWidth: '200px'

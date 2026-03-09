@@ -18,8 +18,6 @@ const AssessmentManagement = () => {
   const [editingItemId, setEditingItemId] = useState(null);
   const [tempStatus, setTempStatus] = useState('');
   const [tempScore, setTempScore] = useState('');
-  const [tempCompletionDate, setTempCompletionDate] = useState('');
-  const [tempAccreditationDate, setTempAccreditationDate] = useState('');
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('success');
@@ -32,6 +30,8 @@ const AssessmentManagement = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteSafetyWarningOpen, setDeleteSafetyWarningOpen] = useState(false);
+  const [incompleteEnrolleesCount, setIncompleteEnrolleesCount] = useState(0);
   const [selectedAssessment, setSelectedAssessment] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [createFormData, setCreateFormData] = useState({});
@@ -91,7 +91,7 @@ const AssessmentManagement = () => {
     setTempStatus(item.currentStatus || '');
     setTempScore(item.score || '');
     setTempCompletionDate(item.completionDate || '');
-    setTempAccreditationDate(item.accreditationDate || '');
+    // Remove accreditationDate handling - using completionDate instead
   };
 
   const handleCancelEdit = () => {
@@ -99,10 +99,10 @@ const AssessmentManagement = () => {
     setTempStatus('');
     setTempScore('');
     setTempCompletionDate('');
-    setTempAccreditationDate('');
+    // setTempAccreditationDate(''); // Removed - using completionDate instead
   };
 
-  const handleSubmitUpdate = async (item, newStatus, score = null, completionDate = null, accreditationDate = null) => {
+  const handleSubmitUpdate = async (item, newStatus, score = null, completionDate = null) => {
     try {
       setSubmitting(true);
       
@@ -119,9 +119,7 @@ const AssessmentManagement = () => {
         updateData.completionDate = completionDate;
       }
       
-      if (accreditationDate !== null && accreditationDate !== '') {
-        updateData.accreditationDate = accreditationDate;
-      }
+      // Remove accreditationDate logic - using completionDate instead
 
       const response = await fetch('http://localhost:5000/ManageContents/updateAssessmentEnrollment', {
         method: 'PUT',
@@ -246,7 +244,27 @@ const AssessmentManagement = () => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    if (!selectedAssessment) return;
+    
+    // Check for incomplete enrollees (safety function)
+    const incompleteEnrollees = selectedAssessment.enrollments?.filter(enrollment => {
+      const status = getStatusDisplay(enrollment);
+      return status?.status !== 'Passed';
+    }) || [];
+    
+    if (incompleteEnrollees.length > 0) {
+      // Show safety warning dialog
+      setIncompleteEnrolleesCount(incompleteEnrollees.length);
+      setDeleteSafetyWarningOpen(true);
+      return;
+    }
+    
+    // Show confirmation dialog if safe to delete
+    setDeleteConfirmOpen(true);
+  };
+
+  const performDelete = async () => {
     if (!selectedAssessment) return;
     
     try {
@@ -315,17 +333,17 @@ const AssessmentManagement = () => {
       setSubmitting(true);
       
       const createData = {
-        name: createFormData.assessmentName,
-        description: createFormData.assessmentDescription,
+        courseName: createFormData.assessmentName,
+        assessmentDescription: createFormData.assessmentDescription,
         duration: parseFloat(createFormData.duration) || 0,
-        delivery_method: createFormData.deliveryMethod || 'Online Assessment',
-        delivery_location: createFormData.deliveryLocation || 'High',
-        max_score: parseInt(createFormData.maxScore) || 0,
-        passing_score: parseInt(createFormData.passingScore) || 0,
+        assessmentMethod: createFormData.deliveryMethod || 'Online Assessment',
+        assessmentLocation: createFormData.deliveryLocation || 'High',
+        maxScore: parseInt(createFormData.maxScore) || 0,
+        passingScore: parseInt(createFormData.passingScore) || 0,
         expiry: createFormData.expiry ? parseInt(createFormData.expiry) : null
       };
       
-      const response = await fetch('http://localhost:5000/ManageContents/createAssessment', {
+      const response = await fetch('http://localhost:5000/CourseCatalogue/createAssessment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -365,50 +383,6 @@ const AssessmentManagement = () => {
       setSubmitting(false);
     }
   };
-
-  if (loading) {
-    return <IcTypography variant="body">Loading managed assessments...</IcTypography>;
-  }
-
-  if (managedAssessments.length === 0) {
-    return (
-      <>
-        <Header />
-        <IcHero
-          heading="Assessment Management"
-          secondaryHeading="No assessments to manage"
-          secondarySubheading="You are not currently assigned as a manager for any assessments."
-          aligned="full-width">
-          <IcButton 
-            slot="interaction"
-            variant="primary"
-            onClick={() => {
-              console.log('Creating new assessment');
-              setIsCreateMode(true);
-              setCreateFormData({
-                assessmentName: '',
-                assessmentDescription: '',
-                duration: '',
-                deliveryMethod: '',
-                deliveryLocation: '',
-                maxScore: '',
-                passingScore: '',
-                expiry: ''
-              });
-              setCreateDialogOpen(true);
-            }}
-          >
-            <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
-            Create Assessment
-          </IcButton>
-        </IcHero>
-        <Footer />
-        
-        {/* Dialogs - available even when no assessments */}
-        {renderDialogs()}
-      </>
-    );
-  }
 
   const renderDialogs = () => (
     <>
@@ -460,28 +434,32 @@ const AssessmentManagement = () => {
             fullWidth="full-width"
             required
           />
-          <IcSelect
+          <IcRadioGroup 
+            name='deliveryMethod'
+            label="Assessment Method" 
             value={createFormData.deliveryMethod || ''}
             onIcChange={(e) => handleCreateFormChange('deliveryMethod', e.detail.value)}
-            label="Delivery Method"
-            fullWidth="full-width"
-            options={[
-              { label: 'Online Assessment', value: 'Online Assessment' },
-              { label: 'Written Assessment', value: 'Written Assessment' },
-              { label: 'Practical Assessment', value: 'Practical Assessment' },
-              { label: 'Interview Assessment', value: 'Interview Assessment' }
-            ]}
-          />
-          <IcSelect
+            required
+          >
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', flexWrap: 'wrap' }}>
+              <IcRadioOption value="Online" label="Online" />
+              <IcRadioOption value="Written" label="Written" />
+              <IcRadioOption value="Practical" label="Practical" />
+              <IcRadioOption value="Interview" label="Interview" />
+            </div>
+          </IcRadioGroup>
+          <br />
+          <IcRadioGroup 
+            name='deliveryLocation'
+            label="Delivery Location" 
+            orientation="horizontal"
             value={createFormData.deliveryLocation || ''}
             onIcChange={(e) => handleCreateFormChange('deliveryLocation', e.detail.value)}
-            label="Delivery Location"
-            fullWidth="full-width"
-            options={[
-              { label: 'High', value: 'High' },
-              { label: 'Low', value: 'Low' }
-            ]}
-          />
+            required
+          >
+            <IcRadioOption value="High" label="High" />
+            <IcRadioOption value="Low" label="Low" />
+          </IcRadioGroup>
           <IcTextField
             value={createFormData.maxScore || ''}
             onIcInput={(e) => handleCreateFormChange('maxScore', e.detail.value)}
@@ -581,28 +559,32 @@ const AssessmentManagement = () => {
             fullWidth="full-width"
             required
           />
-          <IcSelect
+          <IcRadioGroup 
+            name='editDeliveryMethod'
+            label="Assessment Method" 
             value={editFormData.deliveryMethod || ''}
             onIcChange={(e) => handleFormChange('deliveryMethod', e.detail.value)}
-            label="Delivery Method"
-            fullWidth="full-width"
-            options={[
-              { label: 'Online Assessment', value: 'Online Assessment' },
-              { label: 'Written Assessment', value: 'Written Assessment' },
-              { label: 'Practical Assessment', value: 'Practical Assessment' },
-              { label: 'Interview Assessment', value: 'Interview Assessment' }
-            ]}
-          />
-          <IcSelect
+            required
+          >
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', flexWrap: 'wrap' }}>
+              <IcRadioOption value="Online" label="Online" />
+              <IcRadioOption value="Written" label="Written" />
+              <IcRadioOption value="Practical" label="Practical" />
+              <IcRadioOption value="Interview" label="Interview" />
+            </div>
+          </IcRadioGroup>
+          <br />
+          <IcRadioGroup 
+            name='editDeliveryLocation'
+            label="Delivery Location" 
+            orientation="horizontal"
             value={editFormData.deliveryLocation || ''}
             onIcChange={(e) => handleFormChange('deliveryLocation', e.detail.value)}
-            label="Delivery Location"
-            fullWidth="full-width"
-            options={[
-              { label: 'High', value: 'High' },
-              { label: 'Low', value: 'Low' }
-            ]}
-          />
+            required
+          >
+            <IcRadioOption value="High" label="High" />
+            <IcRadioOption value="Low" label="Low" />
+          </IcRadioGroup>
           <IcTextField
             value={editFormData.maxScore || ''}
             onIcInput={(e) => handleFormChange('maxScore', e.detail.value)}
@@ -637,7 +619,7 @@ const AssessmentManagement = () => {
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'space-between' }}>
             <IcButton 
               variant="destructive" 
-              onClick={() => setDeleteConfirmOpen(true)}
+              onClick={handleDelete}
               type="button"
             >
               <SlottedSVGTemplate mdiIcon={mdiDelete} />
@@ -674,14 +656,75 @@ const AssessmentManagement = () => {
           </IcButton>
           <IcButton 
             variant="destructive" 
-            onClick={handleDelete}
+            onClick={performDelete}
           >
             Delete Assessment
           </IcButton>
         </div>
       </IcDialog>
+
+      {/* Delete Safety Warning Dialog */}
+      <IcDialog
+        size="small"
+        open={deleteSafetyWarningOpen}
+        closeOnBackdropClick={false}
+        heading="Cannot Delete Assessment"
+        buttons="false"
+        disable-focus-trap="true"
+        onIcDialogClosed={() => setDeleteSafetyWarningOpen(false)}>
+        <br />
+        <IcTypography variant="body">
+          Cannot delete content with enrollees not having completed. Update entries to completed or withdraw them before deleteing.
+        </IcTypography>
+      </IcDialog>
     </>
   );
+
+  if (loading) {
+    return <IcTypography variant="body">Loading managed assessments...</IcTypography>;
+  }
+
+  if (managedAssessments.length === 0) {
+    return (
+      <>
+        <Header />
+        <IcHero
+          heading="Assessment Management"
+          secondaryHeading="No assessments to manage"
+          secondarySubheading="You are not currently assigned as a manager for any assessments."
+          aligned="full-width">
+          <IcButton 
+            slot="interaction"
+            variant="primary"
+            onClick={() => {
+              console.log('Creating new assessment');
+              setIsCreateMode(true);
+              setCreateFormData({
+                assessmentName: '',
+                assessmentDescription: '',
+                duration: '',
+                deliveryMethod: '',
+                deliveryLocation: '',
+                maxScore: '',
+                passingScore: '',
+                expiry: ''
+              });
+              setCreateDialogOpen(true);
+            }}
+          >
+            <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
+            Create Assessment
+          </IcButton>
+        </IcHero>
+        <Footer />
+        
+        {/* Dialogs - available even when no assessments */}
+        {renderDialogs()}
+      </>
+    );
+  }
+
+
 
   return (
     <>
@@ -839,7 +882,7 @@ const AssessmentManagement = () => {
                           key={index}
                           style={cardContainer}
                           heading={enrollment.username || 'Unknown Student'}
-                          subheading={`${enrollment.role || 'Unknown Role'} | Enrolled: ${enrollment.recordDate || 'Unknown Date'}${enrollment.score ? ` | Score: ${enrollment.score}/${assessment.max_score}` : ''}${enrollment.accreditationDate ? ` | Accredited: ${enrollment.accreditationDate}` : ''}`}
+                          subheading={`${enrollment.role || 'Unknown Role'} | Enrolled: ${enrollment.recordDate || 'Unknown Date'}${enrollment.score ? ` | Score: ${enrollment.score}/${assessment.max_score}` : ''}${enrollment.completionDate ? ` | Completed: ${enrollment.completionDate}` : ''}`}
                           message={`Current Status: ${status?.status || 'Unknown'}`}
                         >
                           <SlottedSVGTemplate mdiIcon={mdiAccountCheck} />
@@ -893,13 +936,6 @@ const AssessmentManagement = () => {
                                       type="date"
                                       style={{ minWidth: '160px', flex: '0 0 auto' }}
                                     />
-                                    <IcTextField
-                                      label="Accreditation Date"
-                                      value={tempAccreditationDate}
-                                      onIcInput={(e) => setTempAccreditationDate(e.detail.value)}
-                                      type="date"
-                                      style={{ minWidth: '160px', flex: '0 0 auto' }}
-                                    />
                                   </div>
                                   <div style={{
                                     display: "flex",
@@ -909,7 +945,7 @@ const AssessmentManagement = () => {
                                   <IcButton 
                                     variant="primary"
                                     size="small"
-                                    onClick={() => handleSubmitUpdate(enrollment, tempStatus, tempScore, tempCompletionDate, tempAccreditationDate)}
+                                    onClick={() => handleSubmitUpdate(enrollment, tempStatus, tempScore, tempCompletionDate)}
                                     disabled={submitting}
                                   >
                                     <SlottedSVGTemplate mdiIcon={mdiCheck} />

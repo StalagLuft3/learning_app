@@ -224,14 +224,18 @@ function Assessments() {
         }} id="createAssessmentForm">
           <IcTextField name="courseName" style={cardContainer} label="Assessment Name" type="text" minCharacters={4} maxCharcters={64} fullWidth="full-width" required />
           <IcTextField name="assessmentDescription" style={cardContainer} label="Assessment Description" rows={3} type="text" minCharacters={16} maxCharcters={256} fullWidth="full-width" required />
-          <IcRadioGroup name='assessmentLocation' label="Delivery Location" orientation="horizontal" required>
+          <IcRadioGroup name='deliveryLocation' label="Delivery Location" orientation="horizontal" required>
             <IcRadioOption value="High" label="High" />
             <IcRadioOption value="Low" label="Low" />
           </IcRadioGroup>
           <br />
-          <IcRadioGroup name='assessmentMethod' label="Assessment Method" orientation="horizontal" required>
-            <IcRadioOption value="Practical Assessment" label="Practical Exam" />
-            <IcRadioOption value="Interview Assessment" label="Interview Exam" />
+          <IcRadioGroup name='deliveryMethod' label="Assessment Method" required>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', flexWrap: 'wrap' }}>
+              <IcRadioOption value="Online" label="Online" />
+              <IcRadioOption value="Written" label="Written" />
+              <IcRadioOption value="Practical" label="Practical" />
+              <IcRadioOption value="Interview" label="Interview" />
+            </div>
           </IcRadioGroup>
           <br />
           <IcTextField name="duration" style={cardContainer} label="Duration in Days" placeholder="Insert number of days in increments of 0.125" type="number" min="0.125" fullWidth="full-width" helperText="Increments of 0.125 Days (1 hour)" required />

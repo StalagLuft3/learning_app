@@ -16,7 +16,7 @@ const AssessmentScoring = () => {
   const [submitting, setSubmitting] = useState(false);
   const [editingItemId, setEditingItemId] = useState(null);
   const [tempScore, setTempScore] = useState('');
-  const [tempAccreditationDate, setTempAccreditationDate] = useState('');
+  // Remove accreditationDate state - using completionDate instead
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('success');
@@ -54,13 +54,13 @@ const AssessmentScoring = () => {
   const handleStartEdit = (item) => {
     setEditingItemId(item.employee_assessmentID);
     setTempScore('');
-    setTempAccreditationDate('');
+    // Remove accreditationDate reset - using completionDate instead
   };
 
   const handleCancelEdit = () => {
     setEditingItemId(null);
     setTempScore('');
-    setTempAccreditationDate('');
+    // Remove accreditationDate reset - using completionDate instead
   };
 
   const handleSubmitUpdate = async (item) => {
@@ -75,12 +75,8 @@ const AssessmentScoring = () => {
         const isPassing = score >= passingScore;
         updateData.newStatus = isPassing ? 'Passed' : 'Attempted';
         
-        if (tempAccreditationDate && isPassing) {
-          updateData.accreditationDate = tempAccreditationDate;
-        }
-        if (tempAccreditationDate) {
-          updateData.attemptDate = tempAccreditationDate;
-        }
+        // Remove accreditationDate logic - using completionDate instead
+        // Remove accreditationDate logic - using completionDate instead
       }
       
       await updateItemStatus('assessment', item.employee_assessmentID, updateData);
@@ -222,8 +218,7 @@ const AssessmentScoring = () => {
                             <IcTextField
                               label="Accreditation Date (YYYY-MM-DD)"
                               type="date"
-                              value={tempAccreditationDate}
-                              onIcInput={(e) => setTempAccreditationDate(e.detail.value)}
+                              // Remove accreditationDate fields - using completionDate instead
                               style={{ 
                                 width: '200px',
                                 maxWidth: '200px'

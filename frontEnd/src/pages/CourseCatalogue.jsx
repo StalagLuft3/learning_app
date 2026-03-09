@@ -605,11 +605,13 @@ function Contents() {
             <IcRadioOption value="Low" label="Low" />
           </IcRadioGroup>
           <br />
-          <IcRadioGroup name='assessmentMethod' label="Delivery Type" orientation="horizontal" required>
-            <IcRadioOption value="Online Assessment" label="Online Exam" />
-            <IcRadioOption value="Written Assessment" label="Written Exam" />
-            <IcRadioOption value="Practical Assessment" label="Practical Exam" />
-            <IcRadioOption value="Interview Assessment" label="Interview Exam" />
+          <IcRadioGroup name='deliveryMethod' label="Assessment Method" required>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', flexWrap: 'wrap' }}>
+              <IcRadioOption value="Online" label="Online" />
+              <IcRadioOption value="Written" label="Written" />
+              <IcRadioOption value="Practical" label="Practical" />
+              <IcRadioOption value="Interview" label="Interview" />
+            </div>
           </IcRadioGroup>
           <br />
           <IcTextField name="duration" style={cardContainer} label="Duration in Days" placeholder="Insert number of days in increments of 0.125" type="number" min="0.125" fullWidth="full-width" helperText="Increments of 0.125 Days (1 hour)" required />
@@ -682,8 +684,10 @@ function Contents() {
               </>
             ) : (
               <>
-                <IcRadioOption value="Practical Assessment" label="Practical Exam" />
-                <IcRadioOption value="Interview Assessment" label="Interview Exam" />
+                <IcRadioOption value="Online" label="Online" />
+                <IcRadioOption value="Written" label="Written" />
+                <IcRadioOption value="Practical" label="Practical" />
+                <IcRadioOption value="Interview" label="Interview" />
               </>
             )}
           </IcRadioGroup>
