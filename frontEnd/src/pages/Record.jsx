@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcChip, IcDialog, IcHero, IcPageHeader, IcRadioGroup, IcRadioOption, IcSelect, IcStatusTag, IcTextField, IcTypography, IcAlert } from "@ukic/react";
-import { mdiCommentQuoteOutline, mdiCommentQuote, mdiNotebook, mdiCheckCircle, mdiSignDirection, mdiPuzzle, mdiPuzzlePlusOutline } from "@mdi/js";
+import { mdiCommentQuoteOutline, mdiCommentQuote, mdiNotebook, mdiCheckCircle, mdiSignDirection, mdiPuzzle, mdiPuzzlePlusOutline, mdiCalendarRange } from "@mdi/js";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 
 import Header from "../components/ITRHeader";
@@ -34,6 +34,9 @@ function Record() {
   const [selectedPathwayID, setSelectedPathwayID] = useState(null); 
   const [banner, setBanner] = useState(null); 
   const [radioSelected, setRadioSelected] = useState("false");
+  const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
+  const [dateRangeChip, setDateRangeChip] = useState(null);
+  const [tempDateRange, setTempDateRange] = useState({ startDate: '', endDate: '' });
   const [userInfo, setUserInfo] = useState(null); 
   const [submittingExperience, setSubmittingExperience] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
@@ -203,6 +206,46 @@ function Record() {
       setSubmittingFeedback(false);
     }
   };
+
+  const handleDateRangeConfirm = () => {
+    if (tempDateRange.startDate && tempDateRange.endDate) {
+      setDateRange({ 
+        startDate: tempDateRange.startDate, 
+        endDate: tempDateRange.endDate 
+      });
+      setDateRangeChip({
+        startDate: new Date(tempDateRange.startDate).toLocaleDateString(),
+        endDate: new Date(tempDateRange.endDate).toLocaleDateString()
+      });
+    }
+    closeDialog("dateRangeFilter");
+  };
+
+  const handleTempDateChange = (field, value) => {
+    setTempDateRange(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const getDefaultDateRange = () => {
+    if (fullRecord.length === 0) {
+      const today = new Date().toISOString().substr(0, 10);
+      return { startDate: today, endDate: today };
+    }
+    
+    // Find the earliest record date
+    const earliestDate = fullRecord.reduce((earliest, record) => {
+      if (!record.recordDate) return earliest;
+      const recordDate = new Date(record.recordDate);
+      return !earliest || recordDate < earliest ? recordDate : earliest;
+    }, null);
+    
+    const startDate = earliestDate ? earliestDate.toISOString().substr(0, 10) : new Date().toISOString().substr(0, 10);
+    const endDate = new Date().toISOString().substr(0, 10); // Today's date
+    
+    return { startDate, endDate };
+  };
   
   let selectedPathwayList = getSelectedPathwayList(fullRecord, myPathwayDetails, selectedPathwayID); 
   let enrolledPathwaysList = getEnrolledPathwaysList(enrolledPathways).map(
@@ -210,7 +253,18 @@ function Record() {
   let dataSubset = fullRecord; 
   if (selectedPathwayID !== null) {
     dataSubset = selectedPathwayList
-  };
+  }
+  
+  // Apply date range filtering if dates are selected
+  if (dateRange.startDate && dateRange.endDate) {
+    const startDate = new Date(dateRange.startDate);
+    const endDate = new Date(dateRange.endDate);
+    
+    dataSubset = dataSubset.filter(item => {
+      const recordDate = new Date(item.recordDate);
+      return recordDate >= startDate && recordDate <= endDate;
+    });
+  }
   
   return (
     <>
@@ -219,6 +273,14 @@ function Record() {
         <IcButton onClick={() => openDialog("pathwayFilter")} slot="interaction" variant="secondary">
           View by Pathway
           <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
+        </IcButton>
+        <IcButton onClick={() => { 
+          const defaults = getDefaultDateRange(); 
+          setTempDateRange(defaults); 
+          openDialog("dateRangeFilter"); 
+        }} slot="interaction" variant="secondary">
+          Set Date Range
+          <SlottedSVGTemplate mdiIcon={mdiCalendarRange} />
         </IcButton>
         <IcButton onClick={() => openDialog('recordExperience')} slot="interaction" variant="primary">
           Record Experience
@@ -244,6 +306,16 @@ function Record() {
           heading={banner["pathwayDescription"]}
         >
         <IcChip slot="heading-adornment" dismissible="true" label={banner["pathwayName"]}  onIcDismiss={() => setBanner(null)}/>
+        </IcPageHeader>
+      ) : (<></>)}
+
+      {dateRangeChip != null ? (
+        <IcPageHeader
+          size="small"
+          sticky="true"
+          heading="Date Range Filter Applied"
+        >
+        <IcChip slot="heading-adornment" dismissible="true" label={`${dateRangeChip.startDate} - ${dateRangeChip.endDate}`} onIcDismiss={() => {setDateRangeChip(null); setDateRange({ startDate: '', endDate: '' });}}/>
         </IcPageHeader>
       ) : (<></>)}
 
@@ -456,6 +528,37 @@ function Record() {
           <SlottedSVGTemplate mdiIcon={mdiCommentQuoteOutline} />
         </IcButton>
       </form>
+    </IcDialog>
+
+    <IcDialog
+      size="large"
+      open={isDialogOpen("dateRangeFilter")}
+      closeOnBackdropClick={false}
+      heading="Set Date Range for Export"
+      onIcDialogClosed={() => closeDialog("dateRangeFilter")}
+      onIcDialogConfirmed={handleDateRangeConfirm}
+    >
+      <IcTypography style={{ marginBottom: '16px' }}>Select a date range to filter your record entries.</IcTypography>
+      <IcTextField 
+        name="startDate" 
+        style={cardContainer} 
+        label="Start Date" 
+        type="date" 
+        fullWidth="full-width" 
+        value={tempDateRange.startDate}
+        onIcChange={(e) => handleTempDateChange('startDate', e.detail.value)}
+        required 
+      />
+      <IcTextField 
+        name="endDate" 
+        style={cardContainer} 
+        label="End Date" 
+        type="date" 
+        fullWidth="full-width" 
+        value={tempDateRange.endDate}
+        onIcChange={(e) => handleTempDateChange('endDate', e.detail.value)}
+        required 
+      />
     </IcDialog>
     </>
   )
