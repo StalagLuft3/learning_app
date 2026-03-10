@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCard, IcStatusTag, IcTextField, IcTypography, IcTab, IcTabContext, IcTabGroup, IcTabPanel, IcSelect, IcAlert, IcToggleButton } from "@ukic/react";
+import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcTab, IcTabContext, IcTabGroup, IcTabPanel, IcSelect, IcAlert, IcToggleButton } from "@ukic/react";
 import { mdiAccountCheck, mdiPuzzleOutline, mdiCheckCircle, mdiCommentQuoteOutline, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
 import SlottedSVGTemplate from "./slottedSVGTemplate";
 import { divContainer, cardContainer } from "../styles/containerLayout";
@@ -287,7 +287,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
           if (itemType === 'courses') {
             return (
               <div key={index} style={divContainer}>
-                <IcCard 
+                <IcCardVertical 
                   style={cardContainer} 
                   heading={item?.courseName || 'Course Name Not Available'}
                   subheading={`Employee: ${item?.username || 'N/A'} | Duration: ${item?.courseDuration || 0} days | Enrolled: ${item?.recordDate || 'N/A'}`}
@@ -331,7 +331,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
                       )}
                     </div>
                   )}
-                </IcCard>
+                </IcCardVertical>
               </div>
             );
           } else if (itemType === 'assessments') {
@@ -341,7 +341,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
               
             return (
               <div key={index} style={divContainer}>
-                <IcCard 
+                <IcCardVertical 
                   style={cardContainer} 
                   heading={item?.name || 'Assessment Name Not Available'}
                   subheading={`Employee: ${item?.username || 'N/A'} | Max Score: ${item?.max_score || 0} | Passing: ${item?.passing_score || 0} | Recorded: ${safeRecordDate}`}
@@ -424,14 +424,14 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
                       )}
                     </div>
                   )}
-                </IcCard>
+                </IcCardVertical>
               </div>
             );
           } else {
             // Experiences (existing code)
             return (
               <div key={index} style={divContainer}>
-                <IcCard 
+                <IcCardVertical 
                   style={cardContainer} 
                   heading={item.experienceDescription}
                   subheading={`Employee: ${item.username} | Duration: ${item.duration} days | Recorded: ${item.recordDate.substr(0, 10)}`}
@@ -509,7 +509,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
                       )}
                     </div>
                   )}
-                </IcCard>
+                </IcCardVertical>
               </div>
             );
           }

@@ -444,4 +444,513 @@ router.put('/bulkUpdatePathwayEnrollments', async function(req, res) {
   }
 });
 
+// ===== DEBUG/TEST ROUTES =====
+
+// GET /debug/database-content - Check what data exists in the database
+router.get('/debug/database-content', async function(req, res) {
+  try {
+    const token = req.cookies["x-auth-token"];
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    // Import Prisma client directly for this debug route
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+
+    try {
+      // Count all the main content types
+      const coursesCount = await prisma.courses.count();
+      const assessmentsCount = await prisma.assessments.count();
+      const templatesCount = await prisma.experience_templates.count();
+      const pathwaysCount = await prisma.pathways.count();
+      
+      // Get a few sample records
+      const sampleCourses = await prisma.courses.findMany({ 
+        take: 3,
+        include: {
+          manager: {
+            select: { username: true, role: true }
+          }
+        }
+      });
+      
+      const sampleAssessments = await prisma.assessments.findMany({ 
+        take: 3,
+        include: {
+          manager: {
+            select: { username: true, role: true }
+          }
+        }
+      });
+      
+      const sampleTemplates = await prisma.experience_templates.findMany({ take: 3 });
+
+      const debugInfo = {
+        counts: {
+          courses: coursesCount,
+          assessments: assessmentsCount,
+          experienceTemplates: templatesCount,
+          pathways: pathwaysCount
+        },
+        samples: {
+          courses: sampleCourses,
+          assessments: sampleAssessments,
+          experienceTemplates: sampleTemplates
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      console.log('Database debug info:', JSON.stringify(debugInfo, null, 2));
+      
+      res.json(debugInfo);
+      
+    } finally {
+      await prisma.$disconnect();
+    }
+  } catch (error) {
+    console.error('Error checking database content:', error);
+    res.status(500).json({ error: error.message, details: 'Check server logs for more information' });
+  }
+});
+
+// GET /debug/simple-courses - Simple test to get all courses
+router.get('/debug/simple-courses', async function(req, res) {
+  try {
+    const token = req.cookies["x-auth-token"];
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    // Import Prisma client directly for this debug route
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+
+    try {
+      // Simple query to get all courses
+      const courses = await prisma.courses.findMany();
+      
+      console.log('Simple courses query result:', courses.length, 'courses found');
+      
+      res.json({
+        count: courses.length,
+        courses: courses,
+        message: 'Direct database query for courses'
+      });
+      
+    } finally {
+      await prisma.$disconnect();
+    }
+  } catch (error) {
+    console.error('Error in simple courses query:', error);
+    res.status(500).json({ error: error.message, details: 'Check server logs for more information' });
+  }
+});
+
+// ===== PATHWAY CONTENT MANAGEMENT ROUTES =====
+
+// GET /pathways/:pathwayId/available-courses - Get courses available to add to a pathway
+router.get('/pathways/:pathwayId/available-courses', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== GET AVAILABLE COURSES REQUEST ===');
+    console.log('Pathway ID:', pathwayId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const data = await manageContents.getAvailableCourses(pathwayId, token);
+    console.log('Available courses found:', data.courses.length);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching available courses:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /pathways/:pathwayId/available-assessments - Get assessments available to add to a pathway
+router.get('/pathways/:pathwayId/available-assessments', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== GET AVAILABLE ASSESSMENTS REQUEST ===');
+    console.log('Pathway ID:', pathwayId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const data = await manageContents.getAvailableAssessments(pathwayId, token);
+    console.log('Available assessments found:', data.assessments.length);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching available assessments:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /pathways/:pathwayId/available-experience-templates - Get experience templates available to add to a pathway
+router.get('/pathways/:pathwayId/available-experience-templates', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== GET AVAILABLE EXPERIENCE TEMPLATES REQUEST ===');
+    console.log('Pathway ID:', pathwayId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const data = await manageContents.getAvailableExperienceTemplates(pathwayId, token);
+    console.log('Available experience templates found:', data.experienceTemplates.length);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching available experience templates:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /pathways/:pathwayId/available-pathways - Get other pathways available for copying content
+router.get('/pathways/:pathwayId/available-pathways', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== GET AVAILABLE PATHWAYS REQUEST ===');
+    console.log('Current Pathway ID:', pathwayId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const data = await manageContents.getAvailablePathways(pathwayId, token);
+    console.log('Available pathways found:', data.pathways.length);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching available pathways:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /pathways/:pathwayId/add-course - Add course to pathway
+router.post('/pathways/:pathwayId/add-course', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const { courseId } = req.body;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== ADD COURSE TO PATHWAY REQUEST ===');
+    console.log('Pathway ID:', pathwayId, 'Course ID:', courseId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    if (!courseId) {
+      return res.status(400).json({ error: "Course ID is required" });
+    }
+
+    const result = await manageContents.addCourseToPathway(pathwayId, courseId, token);
+    console.log('Course added to pathway successfully');
+    
+    res.json({ 
+      message: 'Course added to pathway successfully. Enrolled participants have been automatically enrolled in the course.',
+      result 
+    });
+  } catch (error) {
+    console.error('Error adding course to pathway:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /pathways/:pathwayId/remove-course/:courseId - Remove course from pathway
+router.delete('/pathways/:pathwayId/remove-course/:courseId', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const courseId = req.params.courseId;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== REMOVE COURSE FROM PATHWAY REQUEST ===');
+    console.log('Pathway ID:', pathwayId, 'Course ID:', courseId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const result = await manageContents.removeCourseFromPathway(pathwayId, courseId, token);
+    console.log('Course removed from pathway successfully');
+    
+    res.json({ 
+      message: 'Course removed from pathway successfully.',
+      result 
+    });
+  } catch (error) {
+    console.error('Error removing course from pathway:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /pathways/:pathwayId/add-assessment - Add assessment to pathway
+router.post('/pathways/:pathwayId/add-assessment', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const { assessmentId } = req.body;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== ADD ASSESSMENT TO PATHWAY REQUEST ===');
+    console.log('Pathway ID:', pathwayId, 'Assessment ID:', assessmentId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    if (!assessmentId) {
+      return res.status(400).json({ error: "Assessment ID is required" });
+    }
+
+    const result = await manageContents.addAssessmentToPathway(pathwayId, assessmentId, token);
+    console.log('Assessment added to pathway successfully');
+    
+    res.json({ 
+      message: 'Assessment added to pathway successfully. Enrolled participants have been automatically enrolled in the assessment.',
+      result 
+    });
+  } catch (error) {
+    console.error('Error adding assessment to pathway:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /pathways/:pathwayId/remove-assessment/:assessmentId - Remove assessment from pathway
+router.delete('/pathways/:pathwayId/remove-assessment/:assessmentId', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const assessmentId = req.params.assessmentId;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== REMOVE ASSESSMENT FROM PATHWAY REQUEST ===');
+    console.log('Pathway ID:', pathwayId, 'Assessment ID:', assessmentId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const result = await manageContents.removeAssessmentFromPathway(pathwayId, assessmentId, token);
+    console.log('Assessment removed from pathway successfully');
+    
+    res.json({ 
+      message: 'Assessment removed from pathway successfully.',
+      result 
+    });
+  } catch (error) {
+    console.error('Error removing assessment from pathway:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /pathways/:pathwayId/add-experience-template - Add experience template to pathway
+router.post('/pathways/:pathwayId/add-experience-template', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const { templateId } = req.body;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== ADD EXPERIENCE TEMPLATE TO PATHWAY REQUEST ===');
+    console.log('Pathway ID:', pathwayId, 'Template ID:', templateId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    if (!templateId) {
+      return res.status(400).json({ error: "Template ID is required" });
+    }
+
+    const result = await manageContents.addExperienceTemplateToPathway(pathwayId, templateId, token);
+    console.log('Experience template added to pathway successfully');
+    
+    res.json({ 
+      message: 'Experience template added to pathway successfully. Enrolled participants have been automatically enrolled in the experience.',
+      result 
+    });
+  } catch (error) {
+    console.error('Error adding experience template to pathway:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /pathways/:pathwayId/remove-experience-template/:templateId - Remove experience template from pathway
+router.delete('/pathways/:pathwayId/remove-experience-template/:templateId', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const templateId = req.params.templateId;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== REMOVE EXPERIENCE TEMPLATE FROM PATHWAY REQUEST ===');
+    console.log('Pathway ID:', pathwayId, 'Template ID:', templateId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const result = await manageContents.removeExperienceTemplateFromPathway(pathwayId, templateId, token);
+    console.log('Experience template removed from pathway successfully');
+    
+    res.json({ 
+      message: 'Experience template removed from pathway successfully.',
+      result 
+    });
+  } catch (error) {
+    console.error('Error removing experience template from pathway:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /pathways/:pathwayId/copy-from/:sourcePathwayId - Copy content from another pathway
+router.post('/pathways/:pathwayId/copy-from/:sourcePathwayId', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const sourcePathwayId = req.params.sourcePathwayId;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== COPY PATHWAY CONTENTS REQUEST ===');
+    console.log('Target Pathway ID:', pathwayId, 'Source Pathway ID:', sourcePathwayId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const result = await manageContents.copyPathwayContents(pathwayId, sourcePathwayId, token);
+    console.log('Pathway contents copied successfully:', result);
+    
+    res.json({ 
+      message: `Pathway contents copied successfully. ${result.copied.courses} courses, ${result.copied.assessments} assessments, and ${result.copied.experienceTemplates} experience templates were added.`,
+      result 
+    });
+  } catch (error) {
+    console.error('Error copying pathway contents:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ===== EXPERIENCE TEMPLATE MANAGEMENT ROUTES =====
+
+// GET /experience-templates - Get all experience templates for global management
+router.get('/experience-templates', async function(req, res) {
+  try {
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== GET ALL EXPERIENCE TEMPLATES REQUEST ===');
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const data = await manageContents.getAllExperienceTemplates(token);
+    console.log('Experience templates found:', data.experienceTemplates.length);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching experience templates:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /experience-templates - Create new experience template
+router.post('/experience-templates', async function(req, res) {
+  try {
+    const { experienceDescription, minimumDuration } = req.body;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== CREATE EXPERIENCE TEMPLATE REQUEST ===');
+    console.log('Template data:', { experienceDescription, minimumDuration });
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    if (!experienceDescription) {
+      return res.status(400).json({ error: "Experience description is required" });
+    }
+
+    const templateData = { experienceDescription, minimumDuration };
+    const result = await manageContents.createExperienceTemplate(templateData, token);
+    console.log('Experience template created successfully');
+    
+    res.status(201).json({ 
+      message: 'Experience template created successfully!',
+      experienceTemplate: result 
+    });
+  } catch (error) {
+    console.error('Error creating experience template:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /experience-templates/:templateId - Update experience template
+router.put('/experience-templates/:templateId', async function(req, res) {
+  try {
+    const templateId = req.params.templateId;
+    const { experienceDescription, minimumDuration } = req.body;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== UPDATE EXPERIENCE TEMPLATE REQUEST ===');
+    console.log('Template ID:', templateId);
+    console.log('Update data:', { experienceDescription, minimumDuration });
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const updateData = { experienceDescription, minimumDuration };
+    const result = await manageContents.updateExperienceTemplate(templateId, updateData, token);
+    console.log('Experience template updated successfully');
+    
+    res.json({ 
+      message: 'Experience template updated successfully!',
+      experienceTemplate: result 
+    });
+  } catch (error) {
+    console.error('Error updating experience template:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /experience-templates/:templateId - Delete experience template
+router.delete('/experience-templates/:templateId', async function(req, res) {
+  try {
+    const templateId = req.params.templateId;
+    const token = req.cookies["x-auth-token"];
+    
+    console.log('=== DELETE EXPERIENCE TEMPLATE REQUEST ===');
+    console.log('Template ID:', templateId);
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const result = await manageContents.deleteExperienceTemplate(templateId, token);
+    console.log('Experience template deleted successfully');
+    
+    res.json({ 
+      message: 'Experience template deleted successfully!',
+      result 
+    });
+  } catch (error) {
+    console.error('Error deleting experience template:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router

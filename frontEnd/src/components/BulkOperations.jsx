@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { IcButton, IcCard, IcSelect, IcCheckbox, IcTypography, IcAlert, IcTextField } from "@ukic/react";
+import { IcButton, IcCardVertical, IcSelect, IcCheckbox, IcTypography, IcAlert, IcTextField } from "@ukic/react";
 import { mdiSelectAll, mdiSelectOff, mdiCheck, mdiClose } from "@mdi/js";
 import SlottedSVGTemplate from "./slottedSVGTemplate";
 import { cardContainer } from "../styles/containerLayout";
@@ -158,7 +158,7 @@ const BulkOperations = ({
       </div>
 
       {showBulkPanel && (
-        <IcCard
+        <IcCardVertical
           heading="Bulk Update Operations"
           subheading={`Update ${selectedEnrollments.length} selected enrollment(s)`}
           style={{ ...cardContainer, marginBottom: '16px' }}
@@ -199,7 +199,7 @@ const BulkOperations = ({
               Cancel
             </IcButton>
           </div>
-        </IcCard>
+        </IcCardVertical>
       )}
 
       {/* Render enrollment selection checkboxes */}

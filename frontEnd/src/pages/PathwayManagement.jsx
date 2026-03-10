@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCard, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog } from "@ukic/react";
-import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckCircle, mdiPencil, mdiCheck, mdiClose, mdiChartLine, mdiPlus, mdiSignDirectionPlus, mdiSignDirection, mdiDelete } from "@mdi/js";
+import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcSearchBar, IcAccordion } from "@ukic/react";
+import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckCircle, mdiPencil, mdiCheck, mdiClose, mdiChartLine, mdiPlus, mdiSignDirectionPlus, mdiSignDirection, mdiDelete, mdiNotebook, mdiSchoolOutline, mdiPuzzleOutline } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 
 import Header from "../components/ContentManagementHeader";
@@ -24,6 +24,16 @@ const PathwayManagement = () => {
   const [alertType, setAlertType] = useState('success');
   const [showOnlyInProgress, setShowOnlyInProgress] = useState(false);
   const [activeTab, setActiveTab] = useState(null);
+
+  // Content management states
+  const [contentDialogOpen, setContentDialogOpen] = useState(false);
+  const [contentDialogType, setContentDialogType] = useState(''); // 'courses', 'assessments', 'templates', 'pathways'
+  const [availableContent, setAvailableContent] = useState([]);
+  const [filteredContent, setFilteredContent] = useState([]);
+  const [selectedContent, setSelectedContent] = useState([]);
+  const [loadingContent, setLoadingContent] = useState(false);
+  const [currentPathwayForContent, setCurrentPathwayForContent] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Dialog states for editing
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -377,6 +387,358 @@ const PathwayManagement = () => {
     return { status, color };
   };
 
+  // ===== CONTENT MANAGEMENT FUNCTIONS =====
+
+  const openContentDialog = async (pathwayId, contentType) => {
+    setCurrentPathwayForContent(pathwayId);
+    setContentDialogType(contentType);
+    setContentDialogOpen(true);
+    await loadAvailableContent(pathwayId, contentType);
+  };
+
+  const loadAvailableContent = async (pathwayId, contentType) => {
+    setLoadingContent(true);
+    console.log(`=== LOADING AVAILABLE CONTENT ===`);
+    console.log(`Pathway ID: ${pathwayId}, Content Type: ${contentType}`);
+    
+    try {
+      let endpoint = '';
+      switch (contentType) {
+        case 'courses':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${pathwayId}/available-courses`;
+          break;
+        case 'assessments':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${pathwayId}/available-assessments`;
+          break;
+        case 'templates':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${pathwayId}/available-experience-templates`;
+          break;
+        case 'pathways':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${pathwayId}/available-pathways`;
+          break;
+        default:
+          throw new Error('Unknown content type');
+      }
+
+      console.log(`Fetching from endpoint: ${endpoint}`);
+
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      console.log(`Response status: ${response.status}, OK: ${response.ok}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Raw API response:', data);
+        
+        let content = [];
+        switch (contentType) {
+          case 'courses':
+            content = data.courses || [];
+            console.log(`Extracted courses: ${content.length} items`);
+            break;
+          case 'assessments':
+            content = data.assessments || [];
+            console.log(`Extracted assessments: ${content.length} items`);
+            break;
+          case 'templates':
+            content = data.experienceTemplates || [];
+            console.log(`Extracted templates: ${content.length} items`);
+            break;
+          case 'pathways':
+            content = data.pathways || [];
+            console.log(`Extracted pathways: ${content.length} items`);
+            break;
+        }
+        
+        console.log(`Final content to set in state:`, content);
+        // Filter out content that's already in the pathway
+        const availableOnly = content.filter(item => !item.isInPathway);
+        console.log(`Available content (not in pathway):`, availableOnly.length, 'items');
+        setAvailableContent(availableOnly);
+        setFilteredContent(availableOnly);
+      } else {
+        const errorData = await response.text();
+        console.error(`API Error - Status: ${response.status}, Data:`, errorData);
+        throw new Error('Failed to load available content');
+      }
+    } catch (error) {
+      console.error('Error loading available content:', error);
+      setAlertMessage(`Failed to load available ${contentType}: ${error.message}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 3000);
+    } finally {
+      setLoadingContent(false);
+    }
+  };
+
+  const addContentToPathway = async (contentId, contentType) => {
+    try {
+      setSubmitting(true);
+      
+      let endpoint = '';
+      let body = {};
+      
+      switch (contentType) {
+        case 'courses':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/add-course`;
+          body = { courseId: contentId };
+          break;
+        case 'assessments':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/add-assessment`;
+          body = { assessmentId: contentId };
+          break;
+        case 'templates':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/add-experience-template`;
+          body = { templateId: contentId };
+          break;
+        default:
+          throw new Error('Unknown content type for adding');
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setAlertMessage(result.message || `${contentType.slice(0, -1)} added successfully!`);
+        setAlertType('success');
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+        
+        // Refresh the pathway data and available content
+        await loadManagedPathways();
+        await loadAvailableContent(currentPathwayForContent, contentType);
+        
+      } else {
+        throw new Error(result.error || `Failed to add ${contentType.slice(0, -1)}`);
+      }
+      
+    } catch (error) {
+      console.error(`Failed to add ${contentType}:`, error);
+      setAlertMessage(`Failed to add ${contentType.slice(0, -1)}: ${error.message}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 3000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const removeContentFromPathway = async (contentId, contentType) => {
+    try {
+      setSubmitting(true);
+      
+      let endpoint = '';
+      
+      switch (contentType) {
+        case 'courses':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/remove-course/${contentId}`;
+          break;
+        case 'assessments':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/remove-assessment/${contentId}`;
+          break;
+        case 'templates':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/remove-experience-template/${contentId}`;
+          break;
+        default:
+          throw new Error('Unknown content type for removal');
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setAlertMessage(result.message || `${contentType.slice(0, -1)} removed successfully!`);
+        setAlertType('success');
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+        
+        // Refresh the pathway data
+        await loadManagedPathways();
+        
+      } else {
+        throw new Error(result.error || `Failed to remove ${contentType.slice(0, -1)}`);
+      }
+      
+    } catch (error) {
+      console.error(`Failed to remove ${contentType}:`, error);
+      setAlertMessage(`Failed to remove ${contentType.slice(0, -1)}: ${error.message}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 3000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const copyPathwayContents = async (sourcePathwayId) => {
+    try {
+      setSubmitting(true);
+      
+      const endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/copy-from/${sourcePathwayId}`;
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setAlertMessage(result.message || 'Pathway contents copied successfully!');
+        setAlertType('success');
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 5000);
+        
+        // Close dialog and refresh data
+        setContentDialogOpen(false);
+        await loadManagedPathways();
+        
+      } else {
+        throw new Error(result.error || 'Failed to copy pathway contents');
+      }
+      
+    } catch (error) {
+      console.error('Failed to copy pathway contents:', error);
+      setAlertMessage(`Failed to copy pathway contents: ${error.message}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 3000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const closeContentDialog = () => {
+    setContentDialogOpen(false);
+    setContentDialogType('');
+    setAvailableContent([]);
+    setFilteredContent([]);
+    setSelectedContent([]);
+    setCurrentPathwayForContent(null);
+    setSearchTerm('');
+  };
+
+  const handleSearchChange = (event) => {
+    const term = event.detail.value.toLowerCase();
+    setSearchTerm(term);
+    
+    if (!term) {
+      setFilteredContent(availableContent);
+    } else {
+      const filtered = availableContent.filter(item => {
+        let searchableText = '';
+        
+        switch (contentDialogType) {
+          case 'courses':
+            searchableText = `${item.courseName} ${item.description} ${item.delivery_method} ${item.delivery_location}`;
+            break;
+          case 'assessments':
+            searchableText = `${item.name} ${item.description} ${item.delivery_method} ${item.delivery_location}`;
+            break;
+          case 'templates':
+            searchableText = `${item.experienceDescription}`;
+            break;
+          default:
+            searchableText = JSON.stringify(item);
+        }
+        
+        return searchableText.toLowerCase().includes(term);
+      });
+      setFilteredContent(filtered);
+    }
+  };
+
+  const prepareTableData = () => {
+    return filteredContent.map(item => {
+      let baseData = {};
+      let itemId = null;
+      
+      switch (contentDialogType) {
+        case 'courses':
+          baseData = {
+            name: item.courseName || 'Untitled Course',
+            duration: `${item.duration || 0} hours`,
+            deliveryMethod: item.delivery_method || 'Not specified',
+            deliveryLocation: item.delivery_location || 'Not specified',
+            description: item.description || 'No description'
+          };
+          itemId = item.courseID;
+          break;
+        case 'assessments':
+          baseData = {
+            name: item.name || 'Untitled Assessment',
+            duration: `${item.duration || 0} hours`,
+            deliveryMethod: item.delivery_method || 'Not specified',
+            deliveryLocation: item.delivery_location || 'Not specified',
+            description: item.description || 'No description'
+          };
+          itemId = item.assessmentID;
+          break;
+        case 'templates':
+          baseData = {
+            name: item.experienceDescription?.substring(0, 50) + '...' || 'Untitled Experience',
+            duration: `${item.minimumDuration || 0} hours minimum`,
+            deliveryMethod: 'On-the-job',
+            deliveryLocation: 'Workplace',
+            description: item.experienceDescription || 'No description'
+          };
+          itemId = item.experience_templateID;
+          break;
+        default:
+          baseData = {
+            name: 'Unknown Item',
+            duration: 'N/A',
+            deliveryMethod: 'N/A',
+            deliveryLocation: 'N/A',
+            description: 'N/A'
+          };
+          itemId = item.id;
+      }
+      
+      return {
+        ...baseData,
+        itemId,
+        actions: (
+          <IcButton 
+            size="small"
+            variant="primary"
+            onClick={() => addContentToPathway(itemId, contentDialogType)}
+            disabled={submitting}
+          >
+            <SlottedSVGTemplate mdiIcon={mdiPlus} />
+            Add
+          </IcButton>
+        )
+      };
+    });
+  };
+
+  const getContentDisplayName = (contentType) => {
+    const names = {
+      courses: 'Courses',
+      assessments: 'Assessments', 
+      templates: 'Experience Templates',
+      pathways: 'Other Pathways'
+    };
+    return names[contentType] || contentType;
+  };
+
   if (loading) {
     return <IcTypography variant="body">Loading managed pathways...</IcTypography>;
   }
@@ -499,97 +861,265 @@ const PathwayManagement = () => {
           
           return (
             <IcTabPanel key={pathway.pathwayID} value={pathway.pathwayID.toString()}>
-              {/* Enrollments Section */}
+              {/* Content Management Section */}
               <div style={{ padding: 'var(--ic-space-xs)', width: '85%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <IcTypography variant="h3">
-                    Student Enrollments ({pathway.enrollments?.length || 0})
-                  </IcTypography>
-                  
-                  <IcButton 
-                    variant={showOnlyInProgress ? "primary" : "secondary"}
-                    onClick={() => setShowOnlyInProgress(!showOnlyInProgress)}
-                    size="small"
-                  >
-                    <SlottedSVGTemplate mdiIcon={showOnlyInProgress ? mdiToggleSwitch : mdiToggleSwitchOff} />
-                    Show only in progress ({inProgressEnrollments.length})
-                  </IcButton>
-                </div>
+                <IcTypography variant="h3" style={{ marginBottom: '16px' }}>
+                  Pathway Content Management
+                </IcTypography>
+                
+                {/* Single Add Content Card */}
+                <IcCardVertical
+                  style={{ ...cardContainer, marginBottom: '24px' }}
+                  heading="Add Content to Pathway"
+                  subheading="Choose content type to add to this pathway"
+                >
+                  <SlottedSVGTemplate mdiIcon={mdiPlus} />
+                  <div slot="interaction-controls" style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
+                    <IcButton 
+                      variant="primary"
+                      onClick={() => {
+                        setCurrentPathwayForContent(pathway.pathwayID);
+                        openContentDialog(pathway.pathwayID, 'courses');
+                      }}
+                    >
+                      <SlottedSVGTemplate mdiIcon={mdiSchoolOutline} />
+                      Add Courses
+                    </IcButton>
+                    <IcButton 
+                      variant="primary"
+                      onClick={() => {
+                        setCurrentPathwayForContent(pathway.pathwayID);
+                        openContentDialog(pathway.pathwayID, 'assessments');
+                      }}
+                    >
+                      <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                      Add Assessments
+                    </IcButton>
+                    <IcButton 
+                      variant="primary"
+                      onClick={() => {
+                        setCurrentPathwayForContent(pathway.pathwayID);
+                        openContentDialog(pathway.pathwayID, 'templates');
+                      }}
+                    >
+                      <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
+                      Add Experience Templates
+                    </IcButton>
+                  </div>
+                  <div slot="interaction-controls" style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}>
+                    <IcButton 
+                      variant="tertiary"
+                      onClick={() => {
+                        setCurrentPathwayForContent(pathway.pathwayID);
+                        openContentDialog(pathway.pathwayID, 'pathways');
+                      }}
+                    >
+                      <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
+                      Copy Content from Another Pathway
+                    </IcButton>
+                  </div>
+                </IcCardVertical>
 
-                {currentEnrollments.length === 0 ? (
-                  <IcTypography variant="body" style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
-                    {showOnlyInProgress 
-                      ? 'No enrollments in progress for this pathway.' 
-                      : 'No student enrollments found for this pathway.'
-                    }
-                  </IcTypography>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Pathway Contents Section */}
+                {((pathway.courses && pathway.courses.length > 0) || 
+                  (pathway.assessments && pathway.assessments.length > 0) || 
+                  (pathway.experienceTemplates && pathway.experienceTemplates.length > 0)) && (
+                  <IcAccordion heading="Pathway Contents" style={{ marginBottom: '16px' }}>
+                    {/* Courses */}
+                    {pathway.courses && pathway.courses.length > 0 && (
+                      <>
+                        {pathway.courses.map((course, idx) => (
+                          <div key={`course-${idx}`} style={{ ...divContainer, marginBottom: '16px' }}>
+                            <div>
+                              <IcCardVertical 
+                                fullWidth="true" 
+                                style={cardContainer} 
+                                heading={course.courseName || 'Untitled Course'} 
+                                subheading={`${course.delivery_location || 'N/A'} | ${course.delivery_method || 'N/A'} | ${course.duration || 'N/A'} Day(s) | Course Manager: ${course.manager?.username || 'Unknown'} (${course.manager?.role || 'Unknown'})`} 
+                                message={course.description || 'No description available'}
+                              >
+                                <SlottedSVGTemplate mdiIcon={mdiSchoolOutline} />
+                                <IcStatusTag label="Course" status="info" slot="interaction-button" />
+                                <div slot="interaction-controls" style={{ display: "flex", gap: "8px" }}>
+                                  <IcButton 
+                                    size="small" 
+                                    variant="destructive"
+                                    onClick={() => {
+                                      setCurrentPathwayForContent(pathway.pathwayID);
+                                      removeContentFromPathway(course.courseID, 'courses');
+                                    }}
+                                    disabled={submitting}
+                                  >
+                                    <SlottedSVGTemplate mdiIcon={mdiDelete} />
+                                    Remove
+                                  </IcButton>
+                                </div>
+                              </IcCardVertical>
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+
+                    {/* Assessments */}
+                    {pathway.assessments && pathway.assessments.length > 0 && (
+                      <>
+                        {pathway.assessments.map((assessment, idx) => {
+                          const expiry = assessment.expiry ? `${assessment.expiry}` : 'None';
+                          return (
+                            <div key={`assessment-${idx}`} style={{ ...divContainer, marginBottom: '16px' }}>
+                              <div>
+                                <IcCardVertical 
+                                  fullWidth="true" 
+                                  style={cardContainer} 
+                                  heading={assessment.name || 'Untitled Assessment'} 
+                                  subheading={`${assessment.delivery_location || 'N/A'} | ${assessment.delivery_method || 'N/A'} | ${assessment.duration || 'N/A'} Day(s) | Max Score: ${assessment.max_score || 'N/A'} | Passing Score: ${assessment.passing_score || 'N/A'} | Expiry - Year(s): ${expiry} | Assessment Manager: ${assessment.manager?.username || 'Unknown'} (${assessment.manager?.role || 'Unknown'})`}
+                                  message={assessment.description || 'No description available'}
+                                >
+                                  <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                                  <IcStatusTag label="Assessment" status="success" slot="interaction-button" />
+                                  <div slot="interaction-controls" style={{ display: "flex", gap: "8px" }}>
+                                    <IcButton 
+                                      size="small" 
+                                      variant="destructive"
+                                      onClick={() => {
+                                        setCurrentPathwayForContent(pathway.pathwayID);
+                                        removeContentFromPathway(assessment.assessmentID, 'assessments');
+                                      }}
+                                      disabled={submitting}
+                                    >
+                                      <SlottedSVGTemplate mdiIcon={mdiDelete} />
+                                      Remove
+                                    </IcButton>
+                                  </div>
+                                </IcCardVertical>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+
+                    {/* Experience Templates */}
+                    {pathway.experienceTemplates && pathway.experienceTemplates.length > 0 && (
+                      <>
+                        {pathway.experienceTemplates.map((template, idx) => (
+                          <div key={`template-${idx}`} style={{ ...divContainer, marginBottom: '16px' }}>
+                            <div>
+                              <IcCardVertical 
+                                fullWidth="true" 
+                                style={cardContainer} 
+                                heading={template.experienceDescription || 'Untitled Experience'} 
+                                subheading={`${template.minimumDuration || 'N/A'} hours minimum duration | Workplace Experience`}
+                                message={template.experienceDescription || 'No description available'}
+                              >
+                                <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
+                                <IcStatusTag label="Experience Template" status="warning" slot="interaction-button" />
+                                <div slot="interaction-controls" style={{ display: "flex", gap: "8px" }}>
+                                  <IcButton 
+                                    size="small" 
+                                    variant="destructive"
+                                    onClick={() => {
+                                      setCurrentPathwayForContent(pathway.pathwayID);
+                                      removeContentFromPathway(template.experience_templateID, 'templates');
+                                    }}
+                                    disabled={submitting}
+                                  >
+                                    <SlottedSVGTemplate mdiIcon={mdiDelete} />
+                                    Remove
+                                  </IcButton>
+                                </div>
+                              </IcCardVertical>
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </IcAccordion>
+                )}
+
+                {/* Student Enrollments Section */}
+                {currentEnrollments && currentEnrollments.length > 0 && (
+                  <IcAccordion heading={`Student Enrollments (${currentEnrollments.length})`} style={{ marginBottom: '16px' }}>
+                    <div style={{ marginBottom: '16px' }}>
+                      <IcButton 
+                        variant={showOnlyInProgress ? "primary" : "secondary"}
+                        onClick={() => setShowOnlyInProgress(!showOnlyInProgress)}
+                        size="small"
+                      >
+                        <SlottedSVGTemplate mdiIcon={showOnlyInProgress ? mdiToggleSwitch : mdiToggleSwitchOff} />
+                        Show only in progress ({inProgressEnrollments.length})
+                      </IcButton>
+                    </div>
                     {currentEnrollments.map((enrollment, index) => {
                       const status = getPathwayStatus(enrollment);
                       
                       return (
-                        <IcCard 
-                          key={index}
-                          style={cardContainer}
-                          heading={enrollment.username || 'Unknown Student'}
-                          subheading={`${enrollment.role || 'Unknown Role'} | Enrolled: ${enrollment.recordDate || 'Unknown Date'}`}
-                          message={`Current Status: ${status?.status || 'In Progress'}`}
-                        >
-                          <SlottedSVGTemplate mdiIcon={mdiAccountCheck} />
-                          <IcStatusTag 
-                            slot="interaction-button" 
-                            label={status?.status || 'In Progress'} 
-                            status={status?.color || 'info'} 
-                          />
+                        <div key={index} style={{ ...divContainer, marginBottom: '16px' }}>
+                          <div>
+                            <IcCardVertical 
+                              fullWidth="true"
+                              style={cardContainer}
+                              heading={enrollment.username || 'Unknown Student'}
+                              subheading={`${enrollment.role || 'Unknown Role'} | Enrolled: ${enrollment.recordDate || 'Unknown Date'} | Current Status: ${status?.status || 'In Progress'}`}
+                              message={`Student enrolled in pathway with current status: ${status?.status || 'In Progress'}`}
+                            >
+                              <SlottedSVGTemplate mdiIcon={mdiAccountCheck} />
+                              <IcStatusTag 
+                                slot="interaction-button" 
+                                label={status?.status || 'In Progress'} 
+                                status={status?.color || 'info'} 
+                              />
 
-                          <div slot="interaction-controls" style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}>
-                            {editingItemId === enrollment.pathway_employeeID ? (
-                              <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
-                                <IcSelect
-                                  label="Status"
-                                  value={tempStatus}
-                                  onIcChange={(e) => setTempStatus(e.detail.value)}
-                                  options={[
-                                    { label: 'In Progress', value: 'In Progress' },
-                                    { label: 'Completed', value: 'Completed' },
-                                    { label: 'Withdrawn', value: 'Withdrawn' }
-                                  ]}
-                                  style={{ width: '150px' }}
-                                />
-                                <IcButton 
-                                  variant="primary"
-                                  size="small"
-                                  onClick={() => handleSubmitEnrollmentUpdate(enrollment, tempStatus)}
-                                  disabled={submitting}
-                                >
-                                  <SlottedSVGTemplate mdiIcon={mdiCheck} />
-                                  Save
-                                </IcButton>
-                                <IcButton 
-                                  variant="secondary"
-                                  size="small"
-                                  onClick={handleCancelEdit}
-                                >
-                                  <SlottedSVGTemplate mdiIcon={mdiClose} />
-                                  Cancel
-                                </IcButton>
+                              <div slot="interaction-controls" style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}>
+                                {editingItemId === enrollment.pathway_employeeID ? (
+                                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
+                                    <IcSelect
+                                      label="Status"
+                                      value={tempStatus}
+                                      onIcChange={(e) => setTempStatus(e.detail.value)}
+                                      options={[
+                                        { label: 'In Progress', value: 'In Progress' },
+                                        { label: 'Completed', value: 'Completed' },
+                                        { label: 'Withdrawn', value: 'Withdrawn' }
+                                      ]}
+                                      style={{ width: '150px' }}
+                                    />
+                                    <IcButton 
+                                      variant="primary"
+                                      size="small"
+                                      onClick={() => handleSubmitEnrollmentUpdate(enrollment, tempStatus)}
+                                      disabled={submitting}
+                                    >
+                                      <SlottedSVGTemplate mdiIcon={mdiCheck} />
+                                      Save
+                                    </IcButton>
+                                    <IcButton 
+                                      variant="secondary"
+                                      size="small"
+                                      onClick={handleCancelEdit}
+                                    >
+                                      <SlottedSVGTemplate mdiIcon={mdiClose} />
+                                      Cancel
+                                    </IcButton>
+                                  </div>
+                                ) : (
+                                  <IcButton 
+                                    variant="primary"
+                                    size="small"
+                                    onClick={() => handleStartEdit(enrollment)}
+                                  >
+                                    Update Status
+                                    <SlottedSVGTemplate mdiIcon={mdiAccountCheck} />
+                                  </IcButton>
+                                )}
                               </div>
-                            ) : (
-                              <IcButton 
-                                variant="primary"
-                                size="small"
-                                onClick={() => handleStartEdit(enrollment)}
-                              >
-                                Update Status
-                                <SlottedSVGTemplate mdiIcon={mdiAccountCheck} />
-                              </IcButton>
-                            )}
+                            </IcCardVertical>
                           </div>
-                        </IcCard>
+                        </div>
                       );
                     })}
-                  </div>
+                  </IcAccordion>
                 )}
               </div>
             </IcTabPanel>
@@ -680,6 +1210,164 @@ const PathwayManagement = () => {
               Delete
             </IcButton>
           </div>  
+        </div>
+      </IcDialog>
+      
+      {/* Content Management Dialog */}
+      <IcDialog
+        size="large"
+        open={contentDialogOpen}
+        heading={`Manage ${getContentDisplayName(contentDialogType)}`}
+        buttons="false"
+        onIcDialogClosed={closeContentDialog}>
+        <div>
+          {loadingContent ? (
+            <IcTypography variant="body">Loading available {contentDialogType}...</IcTypography>
+          ) : (
+            <>
+              {contentDialogType === 'pathways' ? (
+                // Special handling for copying from other pathways
+                <>
+                  <IcTypography variant="body" style={{ marginBottom: '16px' }}>
+                    Select a pathway to copy all its content (courses, assessments, and experience templates) into the current pathway:
+                  </IcTypography>
+                  
+                  {availableContent.length === 0 ? (
+                    <IcTypography variant="body" style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
+                      No other pathways available for copying.
+                    </IcTypography>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
+                      {availableContent.map((pathway) => (
+                        <IcCardVertical
+                          key={pathway.pathwayID}
+                          style={cardContainer}
+                          heading={pathway.pathwayName}
+                          subheading={`Manager: ${pathway.managerName} (${pathway.managerRole})`}
+                          message={`Content: ${pathway.contentCount.courses} courses, ${pathway.contentCount.assessments} assessments, ${pathway.contentCount.experienceTemplates} experiences`}
+                        >
+                          <div slot="interaction-controls">
+                            <IcButton 
+                              variant="primary"
+                              size="small"
+                              onClick={() => copyPathwayContents(pathway.pathwayID)}
+                              disabled={submitting}
+                            >
+                              <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
+                              Copy All Content
+                            </IcButton>
+                          </div>
+                        </IcCardVertical>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                // Regular content management with data table
+                <>
+                  <IcTypography variant="body" style={{ marginBottom: '16px' }}>
+                    Select {contentDialogType} to add to this pathway. Use the search bar to filter results.
+                  </IcTypography>
+                  
+                  <IcSearchBar 
+                    placeholder={`Search ${contentDialogType}...`}
+                    onIcInput={handleSearchChange}
+                    value={searchTerm}
+                    style={{ marginBottom: '16px' }}
+                  />
+                  
+                  {filteredContent.length === 0 ? (
+                    <IcTypography variant="body" style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
+                      {availableContent.length === 0 
+                        ? `No ${contentDialogType} available to add.`
+                        : `No ${contentDialogType} match your search.`
+                      }
+                    </IcTypography>
+                  ) : (
+                    <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                      {/* Bespoke table implementation */}
+                      <div style={{ 
+                        border: '1px solid #e0e0e0', 
+                        borderRadius: '4px', 
+                        overflow: 'hidden',
+                        backgroundColor: '#fff'
+                      }}>
+                        {/* Table Header */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
+                          gap: '16px',
+                          padding: '16px',
+                          backgroundColor: '#f5f5f5',
+                          borderBottom: '1px solid #e0e0e0',
+                          fontWeight: 'bold',
+                          fontSize: '14px'
+                        }}>
+                          <div>{contentDialogType === 'templates' ? 'Experience' : 'Name'}</div>
+                          <div>Duration</div>
+                          <div>Delivery Method</div>
+                          <div>Location</div>
+                          <div style={{ textAlign: 'center' }}>Action</div>
+                        </div>
+                        
+                        {/* Table Body */}
+                        {filteredContent.map((item, index) => {
+                          const tableData = prepareTableData();
+                          const row = tableData[index];
+                          if (!row) return null;
+                          
+                          return (
+                            <div key={index} style={{
+                              display: 'grid',
+                              gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
+                              gap: '16px',
+                              padding: '16px',
+                              borderBottom: index < filteredContent.length - 1 ? '1px solid #e0e0e0' : 'none',
+                              backgroundColor: index % 2 === 0 ? '#fafafa' : '#fff'
+                            }}>
+                              <div style={{ fontSize: '14px', fontWeight: '500' }}>
+                                {row.name}
+                                {row.description && (
+                                  <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                                    {row.description.substring(0, 60)}{row.description.length > 60 ? '...' : ''}
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '14px' }}>{row.duration}</div>
+                              <div style={{ fontSize: '14px' }}>{row.deliveryMethod}</div>
+                              <div style={{ fontSize: '14px' }}>{row.deliveryLocation}</div>
+                              <div style={{ textAlign: 'center' }}>{row.actions}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Simple pagination indicator */}
+                      {filteredContent.length > 0 && (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          padding: '16px', 
+                          fontSize: '14px', 
+                          color: '#666' 
+                        }}>
+                          Showing {filteredContent.length} {getContentDisplayName(contentDialogType)}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+              
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
+                <IcButton 
+                  variant="tertiary" 
+                  onClick={closeContentDialog}
+                >
+                  Close
+                </IcButton>
+              </div>
+            </>
+          )}
         </div>
       </IcDialog>
       

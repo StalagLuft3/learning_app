@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { IcDialog, IcTextField, IcRadioGroup, IcRadioOption, IcCard, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcAlert } from "@ukic/react";
+import { IcDialog, IcTextField, IcRadioGroup, IcRadioOption, IcCardVertical, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcAlert } from "@ukic/react";
 import { mdiNotebookPlusOutline, mdiNotebookOutline } from "@mdi/js";
 import { divContainer, sectionContainer, cardContainer } from "../styles/containerLayout";
 
@@ -122,7 +122,7 @@ function Courses() {
         return (
           <div slot="interaction-controls" style={divContainer} key={i}>
             <div>
-              <IcCard 
+              <IcCardVertical 
                 fullWidth="true" 
                 style={cardContainer} 
                 heading={course.courseName} 
@@ -147,7 +147,7 @@ function Courses() {
                     </div>
                   }
                 })()}
-              </IcCard>
+              </IcCardVertical>
             </div>
             <div></div>
           </div>
