@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { IcButton, IcCard, IcChip, IcDialog, IcHero, IcPageHeader, IcRadioGroup, IcRadioOption, IcSelect, IcStatusTag, IcTextField, IcTypography, IcAlert } from "@ukic/react";
+import { IcButton, IcCardVertical, IcChip, IcDialog, IcHero, IcPageHeader, IcRadioGroup, IcRadioOption, IcSelect, IcStatusTag, IcTextField, IcTypography, IcAlert } from "@ukic/react";
 import { mdiCommentQuoteOutline, mdiCommentQuote, mdiNotebook, mdiCheckCircle, mdiSignDirection, mdiPuzzle, mdiPuzzlePlusOutline } from "@mdi/js";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 
@@ -266,11 +266,11 @@ function Record() {
           return (
             <div style={divContainer}>
               <div>
-                <IcCard key={i} style={cardContainer} heading={d.courseName} subheading={`${d.courseDeliveryLocation} | ${d.courseDeliveryMethod} | ${d.duration} Day(s) | Course Manager: ${d.username} (${d.role})`} message={d.courseDescription}>
+                <IcCardVertical key={i} style={cardContainer} heading={d.courseName} subheading={`${d.courseDeliveryLocation} | ${d.courseDeliveryMethod} | ${d.duration} Day(s) | Course Manager: ${d.username} (${d.role})`} message={d.courseDescription}>
                   <SlottedSVGTemplate mdiIcon={mdiNotebook} />
                   <IcTypography slot="adornment" variant="subtitle-small">Status as of {formatDate(d.recordDate)}</IcTypography>
                   <IcStatusTag label={safeStatus} status={safeColor} slot="interaction-button" />
-                </IcCard>
+                </IcCardVertical>
               </div>
               <div></div>
             </div>
@@ -298,12 +298,12 @@ function Record() {
           return (
             <div style={divContainer}>
               <div>
-                <IcCard fullWidth="true" key={i} style={cardContainer} heading={d.name} subheading={`${d.delivery_location} | ${d.delivery_method} | ${d.duration} Day(s) | Max Score: ${d.max_score} | Passing Score: ${d.passing_score} | Expiry - Year(s): ${expiry} | Assessment Manager: ${d.username} (${d.role})`} message={d.description}>
+                <IcCardVertical fullWidth="true" key={i} style={cardContainer} heading={d.name} subheading={`${d.delivery_location} | ${d.delivery_method} | ${d.duration} Day(s) | Max Score: ${d.max_score} | Passing Score: ${d.passing_score} | Expiry - Year(s): ${expiry} | Assessment Manager: ${d.username} (${d.role})`} message={d.description}>
                   <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
                   <IcTypography slot="adornment" variant="subtitle-small">Details as of  {formatDate(d.recordDate)}</IcTypography>
                   <IcTypography slot="adornment" variant="subtitle-small">Score Achieved: {scoreAchieved}</IcTypography>
                   <IcStatusTag label={safeStatus} status={safeColor} slot="interaction-button" />
-                </IcCard>
+                </IcCardVertical>
               </div>
               <div></div>
             </div>
@@ -322,7 +322,7 @@ function Record() {
           return (
             <div style={divContainer}>
               <div>
-                <IcCard key={i} style={cardContainer} heading={d.experienceDescription} subheading={+ d.duration + " (days) |  Details as of  " + formatDate(d.recordDate)}>
+                <IcCardVertical key={i} style={cardContainer} heading={d.experienceDescription} subheading={+ d.duration + " (days) |  Details as of  " + formatDate(d.recordDate)}>
                   <SlottedSVGTemplate mdiIcon={mdiPuzzle} />
                   <IcStatusTag slot="interaction-button" label={safeStatus} status={safeColor} />
                   
@@ -370,7 +370,7 @@ function Record() {
                       <IcTypography slot="adornment">{d.refereeText}</IcTypography>
                     </>
                   }
-                </IcCard>
+                </IcCardVertical>
               </div>
               <div>
               </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCard, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcRadioGroup, IcRadioOption } from "@ukic/react";
+import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcRadioGroup, IcRadioOption } from "@ukic/react";
 import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckCircle, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiCheckboxMarkedCirclePlusOutline, mdiCheckboxMarkedCircleOutline, mdiDelete } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 
@@ -878,7 +878,7 @@ const AssessmentManagement = () => {
                       const canUpdate = canUpdateStatus(enrollment, currentUser);
 
                       return (
-                        <IcCard 
+                        <IcCardVertical 
                           key={index}
                           style={cardContainer}
                           heading={enrollment.username || 'Unknown Student'}
@@ -972,7 +972,7 @@ const AssessmentManagement = () => {
                                 </IcButton>
                               )}
                             </div>
-                        </IcCard>
+                        </IcCardVertical>
                       );
                     })}
                   </div>

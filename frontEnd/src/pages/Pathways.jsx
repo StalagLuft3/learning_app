@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IcAccordion, IcDialog, IcCard, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcTextField, IcAlert } from "@ukic/react";
+import { IcAccordion, IcDialog, IcCardVertical, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcTextField, IcAlert } from "@ukic/react";
 import { mdiSignDirection, mdiSignDirectionPlus, mdiCheckDecagramOutline, mdiSchoolOutline, mdiPuzzleOutline } from "@mdi/js";
 import { cardContainer } from "../styles/containerLayout";
 
@@ -169,7 +169,7 @@ function Pathways() {
               <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
                 <IcSectionContainer>
                   <div>
-                    <IcCard 
+                    <IcCardVertical 
                       style={cardContainer}
                       heading={pl.pathwayDescription}
                       subheading={"Pathway Manager: " + (pl.manager ? pl.manager.username : 'Unknown')}
@@ -183,27 +183,27 @@ function Pathways() {
                           </div>
                         }
                       })()}
-                    </IcCard>
+                    </IcCardVertical>
                   </div>
                 </IcSectionContainer>
                 {contents.map((c, j) => {
                   if (c.pathwayID == pl.pathwayID) {
                     if (c.courseID) {
                       return (
-                        <IcCard fullWidth="true" style={cardContainer} key={j} heading={c.courses?.courseName || 'Course'} subheading={`${c.courses?.delivery_location || 'N/A'} | ${c.courses?.delivery_method || 'N/A'} | ${c.courses?.duration || 'N/A'} Day(s) | Course Manager: ${c.courses?.manager?.username || 'Unknown'} (${c.courses?.manager?.role || 'Unknown'})`} message={c.courses?.description || 'No description available'}>
+                        <IcCardVertical fullWidth="true" style={cardContainer} key={j} heading={c.courses?.courseName || 'Course'} subheading={`${c.courses?.delivery_location || 'N/A'} | ${c.courses?.delivery_method || 'N/A'} | ${c.courses?.duration || 'N/A'} Day(s) | Course Manager: ${c.courses?.manager?.username || 'Unknown'} (${c.courses?.manager?.role || 'Unknown'})`} message={c.courses?.description || 'No description available'}>
                           <SlottedSVGTemplate mdiIcon={mdiSchoolOutline} />
-                        </IcCard>);
+                        </IcCardVertical>);
                     } else if (c.assessmentID) {
                       const expiry = c.assessments?.expiry ? `${c.assessments.expiry}` : 'N/A'
                       return (
-                        <IcCard fullWidth="true" style={cardContainer} key={j} heading={c.assessments?.name || 'Assessment'} subheading={`${c.assessments?.delivery_location || 'N/A'} | ${c.assessments?.delivery_method || 'N/A'} | ${c.assessments?.duration || 'N/A'} Day(s) | Max Score: ${c.assessments?.max_score || 'N/A'} | Passing Score: ${c.assessments?.passing_score || 'N/A'} | Expiry - Year(s): ${expiry} | Assessment Manager: ${c.assessments?.manager?.username || 'Unknown'} (${c.assessments?.manager?.role || 'Unknown'})`} message={c.assessments?.description || 'No description available'}>
+                        <IcCardVertical fullWidth="true" style={cardContainer} key={j} heading={c.assessments?.name || 'Assessment'} subheading={`${c.assessments?.delivery_location || 'N/A'} | ${c.assessments?.delivery_method || 'N/A'} | ${c.assessments?.duration || 'N/A'} Day(s) | Max Score: ${c.assessments?.max_score || 'N/A'} | Passing Score: ${c.assessments?.passing_score || 'N/A'} | Expiry - Year(s): ${expiry} | Assessment Manager: ${c.assessments?.manager?.username || 'Unknown'} (${c.assessments?.manager?.role || 'Unknown'})`} message={c.assessments?.description || 'No description available'}>
                           <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
-                        </IcCard>);
+                        </IcCardVertical>);
                     } else if (c.experience_templateID) {
                       return (
-                        <IcCard fullWidth="true" style={cardContainer} key={j} heading={c.experience_templates?.experienceDescription || 'Experience Template'} subheading={`${c.experience_templates?.minimumDuration || 'N/A'} Day(s) Minimum Duration `}>
+                        <IcCardVertical fullWidth="true" style={cardContainer} key={j} heading={c.experience_templates?.experienceDescription || 'Experience Template'} subheading={`${c.experience_templates?.minimumDuration || 'N/A'} Day(s) Minimum Duration `}>
                           <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
-                        </IcCard>);
+                        </IcCardVertical>);
                     }
                   }
                 })}

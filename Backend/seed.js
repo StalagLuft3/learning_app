@@ -78,11 +78,42 @@ async function main() {
       }
     });
 
+    // Create some test experience templates
+    const experienceTemplate1 = await prisma.experience_templates.create({
+      data: {
+        experienceDescription: 'Shadow a senior developer for a week to observe code review processes and development workflows',
+        minimumDuration: 40
+      }
+    });
+
+    const experienceTemplate2 = await prisma.experience_templates.create({
+      data: {
+        experienceDescription: 'Lead a small team project to implement a new feature from conception to deployment',
+        minimumDuration: 80
+      }
+    });
+
+    const experienceTemplate3 = await prisma.experience_templates.create({
+      data: {
+        experienceDescription: 'Participate in customer support rotation to understand real-world application issues',
+        minimumDuration: 20
+      }
+    });
+
+    // Create a test pathway
+    const pathway1 = await prisma.pathways.create({
+      data: {
+        pathwayName: 'Junior Developer Track',
+        pathwayDescription: 'Comprehensive learning program for new developers',
+        pathwayManagerID: employee1.employeeID
+      }
+    });
+
     console.log('Seed data created successfully');
     console.log('Test users:');
     console.log('- tt@email.com (password: password123)');
     console.log('- admin@email.com (password: password123)');
-    console.log('Test courses and assessments created');
+    console.log('Test courses, assessments, experience templates, and pathways created');
     
   } catch (error) {
     console.error('Error seeding data:', error);

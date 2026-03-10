@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCard, IcDialog, IcHero, IcStatusTag, IcTextField, IcTypography, IcAlert } from "@ukic/react";
+import { IcButton, IcCardVertical, IcDialog, IcHero, IcStatusTag, IcTextField, IcTypography, IcAlert } from "@ukic/react";
 import { mdiCommentQuoteOutline, mdiPuzzleOutline, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ContentManagementHeader";
@@ -108,7 +108,7 @@ function ExperienceFeedback() {
     const totalCount = data.length;
     
     return (
-        <>
+        <> {/* Main container */}
             <Header />
             <IcHero
                 heading="Experience Feedback"
@@ -152,30 +152,32 @@ function ExperienceFeedback() {
                     return (
                         <div key={i} style={divContainer}>
                             <div>
-                                <IcCard style={cardContainer} heading={d.experienceDescription} subheading={"Start date of Experience [ " + d.recordDate + " ] | Duration (hours) [ " + d.duration + " ]"}>
-                                    <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
-                                    <IcTypography slot="adornment" variant="label-uppercase">{d.username + "'s feedback on their experience"}</IcTypography>
-                                    <IcTypography slot="adornment">{d.employeeText}</IcTypography>
+                                <IcCardVertical style={cardContainer} heading={d.experienceDescription} subheading={"Start date of Experience [ " + d.recordDate + " ] | Duration (hours) [ " + d.duration + " ]"}>
+                                    <>
+                                        <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
+                                        <IcTypography slot="adornment" variant="label-uppercase">{`${d.username}'s feedback on their experience`}</IcTypography>
+                                        <IcTypography slot="adornment">{d.employeeText}</IcTypography>
 
-                                    {d.refereeText != null ? (
-                                        <>
-                                            <IcStatusTag slot="interaction-button" label="Feedback Sent" status="success" />
-                                            <IcTypography slot="adornment" variant="label-uppercase">Your feedback on {d.username}'s experience</IcTypography>
-                                            <IcTypography slot="adornment">{d.refereeText}</IcTypography>
-                                        </>
-                                    ) :
-                                        <>
-                                            <IcStatusTag slot="interaction-button" label="Awaiting your feedback" status="warning" />
-                                            <div slot="interaction-controls" style={{ display: "flex", gap: "16px" }}>
-                                                <IcButton onClick={() => handleButtonClick(i)} variant="primary">Draft Feedback
-                                                    <SlottedSVGTemplate mdiIcon={mdiCommentQuoteOutline} />
-                                                </IcButton>
-                                            </div>
-                                        </>
-                                    }
-                                </IcCard>
+                                        {d.refereeText != null ? (
+                                            <>
+                                                <IcStatusTag slot="interaction-button" label="Feedback Sent" status="success" />
+                                                <IcTypography slot="adornment" variant="label-uppercase">{`Your feedback on ${d.username}'s experience`}</IcTypography>
+                                                <IcTypography slot="adornment">{d.refereeText}</IcTypography>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <IcStatusTag slot="interaction-button" label="Awaiting your feedback" status="warning" />
+                                                <div slot="interaction-controls" style={{ display: "flex", gap: "16px" }}>
+                                                    <IcButton onClick={() => handleButtonClick(i)} variant="primary">Draft Feedback
+                                                        <SlottedSVGTemplate mdiIcon={mdiCommentQuoteOutline} />
+                                                    </IcButton>
+                                                </div>
+                                            </>
+                                        )}
+                                    </>
+                                </IcCardVertical>
                             </div>
-                        </div >
+                        </div>
                     );
                 })
             )}
@@ -186,8 +188,8 @@ function ExperienceFeedback() {
                 open={openRecordRefereeFeedbackDialog}
                 closeOnBackdropClick={false}
                 heading="Record your feedback on your referer's experience here."
-                disable-height-constraint='true'
-                buttons="false"
+                disableHeightConstraint={true}
+                buttons={false}
                 onIcDialogClosed={openRecordRefereeFeedbackDialog && handleRecordRefereeFeedbackDialogClose}
             >
                 <form onSubmit={handleSubmitRefereeFeedback} id="recordRefereeFeedback">
@@ -203,9 +205,9 @@ function ExperienceFeedback() {
                         <SlottedSVGTemplate mdiIcon={mdiCommentQuoteOutline} />
                     </IcButton>
                 </form>
-            </IcDialog >
+            </IcDialog>
         </>
     )
-};
+}
 
 export default ExperienceFeedback;

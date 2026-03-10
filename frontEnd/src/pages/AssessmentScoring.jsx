@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCard, IcStatusTag, IcTextField, IcTypography, IcAlert, IcHero } from "@ukic/react";
+import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcAlert, IcHero } from "@ukic/react";
 import { mdiCheckCircle, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ITRHeader";
@@ -173,7 +173,7 @@ const AssessmentScoring = () => {
 
             return (
               <div key={index} style={divContainer}>
-                <IcCard 
+                <IcCardVertical 
                   style={cardContainer} 
                   heading={item?.name || 'Assessment Name Not Available'}
                   subheading={`Employee: ${item?.username || 'N/A'} | Max Score: ${item?.max_score || 0} | Passing: ${item?.passing_score || 0} | Recorded: ${safeRecordDate}`}
@@ -256,7 +256,7 @@ const AssessmentScoring = () => {
                       )}
                     </div>
                   )}
-                </IcCard>
+                </IcCardVertical>
               </div>
             );
           })

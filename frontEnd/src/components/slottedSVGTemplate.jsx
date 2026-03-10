@@ -11,3 +11,4 @@ function SlottedSVGTemplate({ mdiIcon }) {
 }
 
 export default SlottedSVGTemplate;
+

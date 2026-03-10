@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { IcBadge, IcCard, IcTypography } from "@ukic/react";
+import { IcBadge, IcCardVertical, IcTypography } from "@ukic/react";
 import { mdiCommentQuote, mdiFileDocumentMultiple, mdiGraphOutline, mdiNotebook, mdiCheckCircle, mdiSignDirection, mdiAccountCheck, mdiPuzzle } from "@mdi/js";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 
@@ -112,7 +112,7 @@ function Home() {
       {homeCards.map((card, index) => (
         <div key={index} style={divContainer}>
           <div>
-            <IcCard 
+            <IcCardVertical 
               style={cardContainer} 
               heading={card.title} 
               subheading={card.description}
@@ -128,7 +128,7 @@ function Home() {
                   variant="info" 
                 />
               )}
-            </IcCard>
+            </IcCardVertical>
           </div>
           <div></div>
         </div>

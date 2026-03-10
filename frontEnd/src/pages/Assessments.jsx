@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { IcDialog, IcTextField, IcRadioGroup, IcRadioOption, IcCard, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcAlert } from "@ukic/react";
+import { IcDialog, IcTextField, IcRadioGroup, IcRadioOption, IcCardVertical, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcAlert } from "@ukic/react";
 import { mdiCheckboxMarkedCirclePlusOutline, mdiCheckCircleOutline } from "@mdi/js";
 import { divContainer, sectionContainer, cardContainer } from "../styles/containerLayout";
 
@@ -129,7 +129,7 @@ function Assessments() {
         return (
           <div slot="interaction-controls" style={divContainer} key={i}>
             <div>
-              <IcCard 
+              <IcCardVertical 
                 fullWidth="true" 
                 style={cardContainer} 
                 heading={assessment.name} 
@@ -151,7 +151,7 @@ function Assessments() {
                       </div>
                     }
                   })()}
-              </IcCard>
+              </IcCardVertical>
             </div>
             <div></div>
           </div>

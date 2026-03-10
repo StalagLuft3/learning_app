@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import { IcDialog, IcTextField, IcRadioGroup, IcRadioOption, IcCard, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcAlert } from "@ukic/react";
+import { IcDialog, IcTextField, IcRadioGroup, IcRadioOption, IcCardVertical, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcAlert } from "@ukic/react";
 import { mdiNotebookPlusOutline, mdiCheckCircleOutline, mdiCheckboxMarkedCirclePlusOutline, mdiNotebookOutline, mdiToggleSwitch, mdiToggleSwitchOff, mdiPencil, mdiDelete } from "@mdi/js";
 import { divContainer, sectionContainer, cardContainer } from "../styles/containerLayout";
 
@@ -384,7 +384,7 @@ function Contents() {
           return (
             <div slot="interaction-controls" style={divContainer}>
               <div>
-                <IcCard 
+                <IcCardVertical 
                   fullWidth="true" 
                   style={cardContainer} 
                   key={i} 
@@ -413,7 +413,7 @@ function Contents() {
                       }
                     })()
                   )}
-                </IcCard>
+                </IcCardVertical>
               </div>
               <div></div>
             </div>
@@ -423,7 +423,7 @@ function Contents() {
           return (
             <div slot="interaction-controls" style={divContainer}>
               <div>
-                <IcCard 
+                <IcCardVertical 
                   fullWidth="true" 
                   style={cardContainer} 
                   key={i} 
@@ -452,7 +452,7 @@ function Contents() {
                     }
                   })()
                 )}
-              </IcCard>
+              </IcCardVertical>
               </div>
               <div></div>
             </div>

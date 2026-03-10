@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { IcCard, IcSectionContainer, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcHero, IcButton } from "@ukic/react";
+import { IcCardVertical, IcSectionContainer, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcHero, IcButton } from "@ukic/react";
 import { mdiAccountDetails, mdiBookOpenPageVariant } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ITRHeader";
@@ -46,7 +46,7 @@ function Manage() {
       {/* Record and Catalogue Cards */}
       <div style={divContainer}>
         <IcSectionContainer type="center" style={sectionContainer}>
-          <IcCard 
+          <IcCardVertical 
             fullWidth="true" 
             style={cardContainer} 
             heading="Your Record" 
@@ -60,9 +60,9 @@ function Manage() {
                 View Record
               </IcButton>
             </div>
-          </IcCard>
+          </IcCardVertical>
           
-          <IcCard 
+          <IcCardVertical 
             fullWidth="true" 
             style={cardContainer} 
             heading="Course Catalogue" 
@@ -76,7 +76,7 @@ function Manage() {
                 Browse Catalogue
               </IcButton>
             </div>
-          </IcCard>
+          </IcCardVertical>
         </IcSectionContainer>
       </div>
 
@@ -89,7 +89,7 @@ function Manage() {
       
       <div style={divContainer}>
         <IcSectionContainer type="center" style={sectionContainer}>
-          <IcCard fullWidth="true" style={cardContainer}>
+          <IcCardVertical fullWidth="true" style={cardContainer}>
             <IcTabContext>
               <IcTabGroup label="Management Options">
                 <IcTab>Course Management</IcTab>
@@ -109,7 +109,7 @@ function Manage() {
                 <PathwayManagement />
               </IcTabPanel>
             </IcTabContext>
-          </IcCard>
+          </IcCardVertical>
         </IcSectionContainer>
       </div>
 

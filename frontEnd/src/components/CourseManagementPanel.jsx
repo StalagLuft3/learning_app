@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCard, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert } from "@ukic/react";
+import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert } from "@ukic/react";
 import { mdiAccountCheck, mdiSchool, mdiAccountRemove } from "@mdi/js";
 import SlottedSVGTemplate from "./slottedSVGTemplate";
 import { divContainer, cardContainer } from "../styles/containerLayout";
@@ -166,7 +166,7 @@ const CourseManagementPanel = ({ currentUser }) => {
               
               return (
                 <div key={enrollment.employee_courseID} style={divContainer}>
-                  <IcCard 
+                  <IcCardVertical 
                     style={cardContainer} 
                     heading={enrollment.username || 'Unknown Student'}
                     subheading={`Role: ${enrollment.role || 'N/A'} | Enrolled: ${enrollment.recordDate || 'N/A'} | Duration: ${course.duration} days`}
@@ -240,7 +240,7 @@ const CourseManagementPanel = ({ currentUser }) => {
                         </IcButton>
                       )}
                     </div>
-                  </IcCard>
+                  </IcCardVertical>
                 </div>
               );
             })

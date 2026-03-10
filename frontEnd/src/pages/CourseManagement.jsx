@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCard, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog } from "@ukic/react";
+import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog } from "@ukic/react";
 import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiSchool, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiNotebookPlusOutline, mdiNotebookOutline, mdiDelete } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ContentManagementHeader";
@@ -712,7 +712,7 @@ const CourseManagement = () => {
                       const canUpdate = canUpdateStatus(enrollment, currentUser);
 
                       return (
-                        <IcCard 
+                        <IcCardVertical 
                           key={index}
                           style={cardContainer}
                           heading={enrollment.username || 'Unknown Student'}
@@ -797,7 +797,7 @@ const CourseManagement = () => {
                                 </IcButton>
                               )}
                             </div>
-                        </IcCard>
+                        </IcCardVertical>
                       );
                     })}
                   </div>
