@@ -1,6 +1,5 @@
 const router = require("express").Router();
 const record = require('../services/record');
-const checkAuth = require('../middleware/checkAuth');
 const { jwtDecode } = require('jwt-decode');
 
 

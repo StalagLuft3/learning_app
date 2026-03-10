@@ -1,6 +1,5 @@
 const router = require("express").Router();
 const pathways = require('../services/pathways');
-const checkAuth = require('../middleware/checkAuth');
 const { jwtDecode } = require('jwt-decode');
 
 
