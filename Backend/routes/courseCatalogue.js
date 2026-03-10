@@ -1,6 +1,5 @@
 const router = require("express").Router();
 const contents = require('../services/CourseCatalogue');
-const checkAuth = require('../middleware/checkAuth');
 const { jwtDecode } = require('jwt-decode');
 
 // Test endpoint

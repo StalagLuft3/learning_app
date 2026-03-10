@@ -1,6 +1,5 @@
 const router = require("express").Router();
 const manageContents = require('../services/manageContents');
-const checkAuth = require('../middleware/checkAuth');
 
 // GET /courses/:managerId - Get courses managed by a specific user with enrollments
 router.get('/courses/:managerId', async function(req, res) {
@@ -147,9 +146,14 @@ router.put('/updateAssessmentEnrollment', async function(req, res) {
 });
 
 // GET / 
-router.get('/pathwaysList',checkAuth, async function(req, res, next) {
+router.get('/pathwaysList', async function(req, res, next) {
   try{
     const token = req.cookies["x-auth-token"];
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
     const pathwaysList = await manageContents.getPathwaysList(token);
     return res.status(200).json({ pathwaysList });
   } catch (err) { 
@@ -160,9 +164,14 @@ router.get('/pathwaysList',checkAuth, async function(req, res, next) {
 
 
 // GET /
-router.get('/',checkAuth, async function(req, res, next) {
+router.get('/', async function(req, res, next) {
   try{
-    const token = req.cookies["x-auth-token"]
+    const token = req.cookies["x-auth-token"];
+    
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
     const x = await manageContents.getContents(token);
     console.log(x)
     return res.status(200).json(x);

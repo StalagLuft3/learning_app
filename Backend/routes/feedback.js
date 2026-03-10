@@ -1,6 +1,5 @@
 const router = require("express").Router();
 const feedback = require('../services/feedback');
-const checkAuth = require('../middleware/checkAuth');
 const { jwtDecode } = require('jwt-decode');
 
 
