@@ -34,13 +34,12 @@ function ExperienceFeedback() {
         setDialogIndex(null);
     }
 
-    const handleSubmitRefereeFeedback = async (event) => {
-        event.preventDefault();
-        
+    const handleSubmitRefereeFeedback = async () => {
         try {
             setSubmittingFeedback(true);
             
-            const formData = new FormData(event.target);
+            const form = document.getElementById('recordRefereeFeedback');
+            const formData = new FormData(form);
             const feedbackData = {
                 recordRefereeFeedback: formData.get('recordRefereeFeedback'),
                 employeeIndex: employeesIDList[dialogIndex],
@@ -73,7 +72,7 @@ function ExperienceFeedback() {
                 const refreshedData = await fetchData("/feedback");
                 setData(refreshedData.feedback);
                 // Reset form
-                event.target.reset();
+                form.reset();
             } else {
                 console.error('Failed to submit referee feedback:', result);
                 setAlertMessage(`Failed to submit feedback: ${result.errors || 'Please try again.'}`);
@@ -189,21 +188,11 @@ function ExperienceFeedback() {
                 closeOnBackdropClick={false}
                 heading="Record your feedback on your referer's experience here."
                 disableHeightConstraint={true}
-                buttons={false}
                 onIcDialogClosed={openRecordRefereeFeedbackDialog && handleRecordRefereeFeedbackDialogClose}
+                onIcDialogConfirmed={handleSubmitRefereeFeedback}
             >
-                <form onSubmit={handleSubmitRefereeFeedback} id="recordRefereeFeedback">
+                <form id="recordRefereeFeedback">
                     <IcTextField name="recordRefereeFeedback" style={cardContainer} rows={3} label={"Remember the Service's values of CREATIVITY, COURAGE, INTEGRITY and RESPECT. Be clear, specific and constructive."} placeholder="Describe how you think it went here (ACTION & RESULT)." type="text" minCharacters="4" maxLength="256" fullWidth="full-width" required />
-                    <br />
-                    <IcButton 
-                        variant="primary" 
-                        type="submit" 
-                        form="recordRefereeFeedback" 
-                        disabled={submittingFeedback}
-                    >
-                        {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
-                        <SlottedSVGTemplate mdiIcon={mdiCommentQuoteOutline} />
-                    </IcButton>
                 </form>
             </IcDialog>
         </>

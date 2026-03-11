@@ -18,6 +18,7 @@ const AssessmentManagement = () => {
   const [editingItemId, setEditingItemId] = useState(null);
   const [tempStatus, setTempStatus] = useState('');
   const [tempScore, setTempScore] = useState('');
+  const [tempCompletionDate, setTempCompletionDate] = useState('');
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('success');
@@ -102,13 +103,24 @@ const AssessmentManagement = () => {
     // setTempAccreditationDate(''); // Removed - using completionDate instead
   };
 
-  const handleSubmitUpdate = async (item, newStatus, score = null, completionDate = null) => {
+  const handleSubmitUpdate = async (item, newStatus, score = null, completionDate = null, assessment = null) => {
     try {
       setSubmitting(true);
       
+      // Auto-determine status based on score if score is provided
+      let finalStatus = newStatus;
+      if (score !== null && score !== '' && assessment && assessment.passing_score !== null) {
+        const numericScore = parseInt(score) || 0;
+        if (numericScore >= assessment.passing_score) {
+          finalStatus = 'Passed';
+        } else {
+          finalStatus = 'Attempted';
+        }
+      }
+      
       const updateData = { 
         enrollmentId: item.employee_assessmentID,
-        newStatus 
+        newStatus: finalStatus 
       };
       
       if (score !== null && score !== '') {
@@ -133,10 +145,10 @@ const AssessmentManagement = () => {
       const result = await response.json();
       
       if (response.ok) {
-        if (newStatus === 'Withdrawn') {
+        if (finalStatus === 'Withdrawn') {
           setAlertMessage(`${item.username} has been withdrawn from the assessment and removed from their record.`);
         } else {
-          setAlertMessage(`${item.username} has been marked as "${newStatus}"`);
+          setAlertMessage(`${item.username} has been marked as "${finalStatus}"`);
         }
         setAlertType('success');
         setAlertVisible(true);
@@ -915,14 +927,12 @@ const AssessmentManagement = () => {
                                       options={[
                                         { label: 'Enrolled', value: 'Enrolled' },
                                         { label: 'Expired', value: 'Expired' },
-                                        { label: 'Attempted', value: 'Attempted' },
-                                        { label: 'Passed', value: 'Passed' },
                                         { label: 'Withdraw (Remove from Record)', value: 'Withdrawn' }
                                       ]}
                                       style={{ minWidth: '150px', flex: '1' }}
                                     />
                                     <IcTextField
-                                      label="Score"
+                                      label={`Score (${assessment.passing_score} pass) (${assessment.max_score} max)`}
                                       value={tempScore}
                                       onIcInput={(e) => setTempScore(e.detail.value)}
                                       type="number"
@@ -945,7 +955,7 @@ const AssessmentManagement = () => {
                                   <IcButton 
                                     variant="primary"
                                     size="small"
-                                    onClick={() => handleSubmitUpdate(enrollment, tempStatus, tempScore, tempCompletionDate)}
+                                    onClick={() => handleSubmitUpdate(enrollment, tempStatus, tempScore, tempCompletionDate, assessment)}
                                     disabled={submitting}
                                   >
                                     <SlottedSVGTemplate mdiIcon={mdiCheck} />
