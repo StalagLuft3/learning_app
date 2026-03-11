@@ -30,10 +30,10 @@ async function getPathwaysList(token){
   }
 }
 
-// GET MANAGED PATHWAYS WITH ENROLLMENTS AND CALCULATED COMPLETION STATUS
+// GET MANAGED PATHWAYS WITH ENROLLMENTS
 async function getManagedPathways(managerId) {
   try {
-    console.log('getManagedPathways called with managerId:', managerId);
+    console.log('getManagedPathways: Loading pathways managed by:', managerId);
     
     const pathways = await prisma.pathways.findMany({
       where: {
@@ -79,124 +79,29 @@ async function getManagedPathways(managerId) {
       }
     });
 
-    console.log(`Found ${pathways.length} pathways`);
-
-    // Calculate completion status for each pathway enrollment
-    const transformedPathways = await Promise.all(pathways.map(async pathway => {
-      console.log(`Processing pathway ${pathway.pathwayName} with ${pathway.pathways_employees.length} enrollments`);
-      
-      const enrollmentsWithProgress = await Promise.all(pathway.pathways_employees.map(async enrollment => {
-        const employeeId = enrollment.employeeID;
-        
-        // Get total required components
-        const totalCourses = pathway.pathways_courses.length;
-        const totalAssessments = pathway.pathways_assessments.length;
-        const totalExperienceTemplates = pathway.pathways_experience_templates.length;
-        const totalComponents = totalCourses + totalAssessments + totalExperienceTemplates;
-                
-        let completedComponents = 0;
-        let totalDuration = 0;
-        let completedDuration = 0;
-        
-        // Check completed courses
-        const courseCompletions = await prisma.employees_courses.findMany({
-          where: {
-            employeeID: employeeId,
-            courseID: {
-              in: pathway.pathways_courses.map(pc => pc.courseID)
-            },
-            currentStatus: 'Completed'
-          },
-          include: {
-            courses: {
-              select: {
-                duration: true
-              }
-            }
-          }
-        });
-        
-        completedComponents += courseCompletions.length;
-        completedDuration += courseCompletions.reduce((sum, cc) => sum + (cc.courses.duration || 0), 0);
-        totalDuration += pathway.pathways_courses.reduce((sum, pc) => sum + (pc.courses.duration || 0), 0);
-        
-        // Check completed assessments
-        const assessmentCompletions = await prisma.employees_assessments.findMany({
-          where: {
-            employeeID: employeeId,
-            assessmentID: {
-              in: pathway.pathways_assessments.map(pa => pa.assessmentID)
-            },
-            currentStatus: 'Passed'
-          },
-          include: {
-            assessments: {
-              select: {
-                duration: true
-              }
-            }
-          }
-        });
-        
-        completedComponents += assessmentCompletions.length;
-        completedDuration += assessmentCompletions.reduce((sum, ac) => sum + (ac.assessments.duration || 0), 0);
-        totalDuration += pathway.pathways_assessments.reduce((sum, pa) => sum + (pa.assessments.duration || 0), 0);
-        
-        // Check completed experiences (based on experience templates)
-        const experienceCompletions = await prisma.employees_experiences.findMany({
-          where: {
-            employeeID: employeeId,
-            experience_templateID: {
-              in: pathway.pathways_experience_templates.map(pt => pt.experience_templateID)
-            },
-            refereeText: {
-              not: null
-            }
-          }
-        });
-        
-        completedComponents += experienceCompletions.length;
-        completedDuration += experienceCompletions.reduce((sum, exp) => sum + (exp.duration || 0), 0);
-        totalDuration += pathway.pathways_experience_templates.reduce((sum, pt) => sum + (pt.experience_templates.minimumDuration || 0), 0);
-        
-        // Calculate completion status
-        const isCompleted = totalComponents > 0 && completedComponents === totalComponents;
-        const completionPercentage = totalDuration > 0 ? Math.round((completedDuration / totalDuration) * 100) : 0;
-        
-        console.log(`${enrollment.employees.username}: ${completedComponents}/${totalComponents} components, ${completedDuration}h/${totalDuration}h (${completionPercentage}%), status: ${isCompleted ? 'Completed' : 'In Progress'}`);
-        
-        return {
-          pathway_employeeID: enrollment.pathway_employeeID,
-          employeeID: enrollment.employeeID,
-          username: enrollment.employees.username,
-          role: enrollment.employees.role,
-          email: enrollment.employees.email,
-          recordDate: enrollment.recordDate,
-          pathwayID: enrollment.pathwayID,
-          currentStatus: isCompleted ? 'Completed' : 'In Progress',
-          completedComponents,
-          totalComponents,
-          completionPercentage,
-          completedDuration,
-          totalDuration
-        };
-      }));
-
-      return {
-        pathwayID: pathway.pathwayID,
-        pathwayName: pathway.pathwayName,
-        pathwayDescription: pathway.pathwayDescription,
-        managerName: pathway.manager.username,
-        managerRole: pathway.manager.role,
-        enrollments: enrollmentsWithProgress,
-        courses: pathway.pathways_courses.map(pc => pc.courses),
-        assessments: pathway.pathways_assessments.map(pa => pa.assessments),
-        experienceTemplates: pathway.pathways_experience_templates.map(pt => pt.experience_templates),
-        totalEnrollments: enrollmentsWithProgress.length,
-        completedEnrollments: enrollmentsWithProgress.filter(e => e.currentStatus === 'Completed').length
-      };
+    // Transform the data to match the expected format
+    const transformedPathways = pathways.map(pathway => ({
+      pathwayID: pathway.pathwayID,
+      pathwayName: pathway.pathwayName,
+      pathwayDescription: pathway.pathwayDescription,
+      managerName: pathway.manager.username,
+      managerRole: pathway.manager.role,
+      enrollments: pathway.pathways_employees.map(enrollment => ({
+        pathway_employeeID: enrollment.pathway_employeeID,
+        employeeID: enrollment.employeeID,
+        username: enrollment.employees.username,
+        role: enrollment.employees.role,
+        email: enrollment.employees.email,
+        recordDate: enrollment.recordDate,
+        pathwayID: enrollment.pathwayID,
+        currentStatus: 'In Progress' // Default status for pathways
+      })),
+      courses: pathway.pathways_courses.map(pc => pc.courses),
+      assessments: pathway.pathways_assessments.map(pa => pa.assessments),
+      experienceTemplates: pathway.pathways_experience_templates.map(pt => pt.experience_templates)
     }));
 
+    console.log('getManagedPathways: Found pathways:', transformedPathways.length);
     return { pathways: transformedPathways };
   } catch (error) {
     console.error('Error loading managed pathways:', error);
@@ -204,9 +109,42 @@ async function getManagedPathways(managerId) {
   }
 }
 
+// UPDATE PATHWAY ENROLLMENT
+async function updatePathwayEnrollment(enrollmentId, updateData) {
+  try {
+    console.log('updatePathwayEnrollment: Updating enrollment:', enrollmentId, updateData);
+    
+    const updateFields = {};
+    
+    if (updateData.newStatus) {
+      updateFields.enrollment_status = updateData.newStatus;
+    }
+    
+    if (updateData.recordDate) {
+      updateFields.recordDate = updateData.recordDate;
+    }
+
+    console.log('updatePathwayEnrollment: Update fields:', updateFields);
+
+    const result = await prisma.pathways_employees.update({
+      where: {
+        pathway_employeeID: parseInt(enrollmentId)
+      },
+      data: updateFields
+    });
+
+    console.log('updatePathwayEnrollment: Update successful:', result);
+    return result;
+  } catch (error) {
+    console.error('Error updating pathway enrollment:', error);
+    throw error;
+  }
+}
+
 // UPDATE PATHWAY DETAILS
 async function updatePathway(pathwayID, updateData) {
   try {
+    console.log('updatePathway: Updating pathway:', pathwayID, updateData);
     
     const updateFields = {};
     
@@ -218,6 +156,7 @@ async function updatePathway(pathwayID, updateData) {
       updateFields.pathwayDescription = updateData.pathwayDescription;
     }
 
+    console.log('updatePathway: Update fields:', updateFields);
 
     const result = await prisma.pathways.update({
       where: {
@@ -226,6 +165,7 @@ async function updatePathway(pathwayID, updateData) {
       data: updateFields
     });
 
+    console.log('updatePathway: Update successful:', result);
     return result;
   } catch (error) {
     console.error('Error updating pathway:', error);
@@ -238,6 +178,7 @@ async function updatePathway(pathwayID, updateData) {
 // GET AVAILABLE COURSES for pathway content selection
 async function getAvailableCourses(pathwayID, token) {
   try {
+    console.log('getAvailableCourses: Starting for pathway', pathwayID);
     const employeeEmail = jwtDecode(token).email;
     
     // Get employee to verify permissions
@@ -249,6 +190,7 @@ async function getAvailableCourses(pathwayID, token) {
       throw new Error('Employee not found');
     }
 
+    console.log('getAvailableCourses: Employee found:', employee.username);
 
     // Get all courses
     const allCourses = await prisma.courses.findMany({
@@ -259,6 +201,7 @@ async function getAvailableCourses(pathwayID, token) {
       }
     });
 
+    console.log('getAvailableCourses: Total courses found:', allCourses.length);
 
     // Get courses already in this pathway
     const pathwayCourses = await prisma.pathways_courses.findMany({
@@ -266,19 +209,20 @@ async function getAvailableCourses(pathwayID, token) {
       select: { courseID: true }
     });
     
+    console.log('getAvailableCourses: Courses already in pathway:', pathwayCourses.length);
     
     const existingCourseIDs = pathwayCourses.map(pc => pc.courseID);
 
-    // Filter out courses already in pathway and return only available ones
-    const availableCourses = allCourses
-      .filter(course => !existingCourseIDs.includes(course.courseID))
-      .map(course => ({
-        ...course,
-        managerName: course.manager.username,
-        managerRole: course.manager.role
-      }));
+    // Return all courses with indication of whether they're already in pathway
+    const coursesWithStatus = allCourses.map(course => ({
+      ...course,
+      managerName: course.manager.username,
+      managerRole: course.manager.role,
+      isInPathway: existingCourseIDs.includes(course.courseID)
+    }));
 
-    return { courses: availableCourses };
+    console.log('getAvailableCourses: Returning courses with status:', coursesWithStatus.length);
+    return { courses: coursesWithStatus };
   } catch (error) {
     console.error('Error loading available courses:', error);
     throw error;
@@ -288,6 +232,7 @@ async function getAvailableCourses(pathwayID, token) {
 // GET AVAILABLE ASSESSMENTS for pathway content selection
 async function getAvailableAssessments(pathwayID, token) {
   try {
+    console.log('getAvailableAssessments: Starting for pathway', pathwayID);
     const employeeEmail = jwtDecode(token).email;
     
     const employee = await prisma.employees.findFirst({
@@ -298,6 +243,7 @@ async function getAvailableAssessments(pathwayID, token) {
       throw new Error('Employee not found');
     }
 
+    console.log('getAvailableAssessments: Employee found:', employee.username);
 
     const allAssessments = await prisma.assessments.findMany({
       include: {
@@ -307,25 +253,26 @@ async function getAvailableAssessments(pathwayID, token) {
       }
     });
 
+    console.log('getAvailableAssessments: Total assessments found:', allAssessments.length);
 
     const pathwayAssessments = await prisma.pathways_assessments.findMany({
       where: { pathwayID: parseInt(pathwayID) },
       select: { assessmentID: true }
     });
     
+    console.log('getAvailableAssessments: Assessments already in pathway:', pathwayAssessments.length);
     
     const existingAssessmentIDs = pathwayAssessments.map(pa => pa.assessmentID);
 
-    // Filter out assessments already in pathway and return only available ones
-    const availableAssessments = allAssessments
-      .filter(assessment => !existingAssessmentIDs.includes(assessment.assessmentID))
-      .map(assessment => ({
-        ...assessment,
-        managerName: assessment.manager.username,
-        managerRole: assessment.manager.role
-      }));
+    const assessmentsWithStatus = allAssessments.map(assessment => ({
+      ...assessment,
+      managerName: assessment.manager.username,
+      managerRole: assessment.manager.role,
+      isInPathway: existingAssessmentIDs.includes(assessment.assessmentID)
+    }));
 
-    return { assessments: availableAssessments };
+    console.log('getAvailableAssessments: Returning assessments with status:', assessmentsWithStatus.length);
+    return { assessments: assessmentsWithStatus };
   } catch (error) {
     console.error('Error loading available assessments:', error);
     throw error;
@@ -335,6 +282,7 @@ async function getAvailableAssessments(pathwayID, token) {
 // GET AVAILABLE EXPERIENCE TEMPLATES for pathway content selection
 async function getAvailableExperienceTemplates(pathwayID, token) {
   try {
+    console.log('getAvailableExperienceTemplates: Starting for pathway', pathwayID);
     const employeeEmail = jwtDecode(token).email;
     
     const employee = await prisma.employees.findFirst({
@@ -345,89 +293,18 @@ async function getAvailableExperienceTemplates(pathwayID, token) {
       throw new Error('Employee not found');
     }
 
-
-    const allExperienceTemplates = await prisma.experience_templates.findMany({});
-
-
-    const pathwayExperienceTemplates = await prisma.pathways_experience_templates.findMany({
-      where: { pathwayID: parseInt(pathwayID) },
-      select: { experience_templateID: true }
-    });
-    
-    
-    const existingTemplateIDs = pathwayExperienceTemplates.map(pet => pet.experience_templateID);
-
-    // Filter out experience templates already in pathway and return only available ones
-    const availableExperienceTemplates = allExperienceTemplates
-      .filter(template => !existingTemplateIDs.includes(template.experience_templateID));
-
-    return { experienceTemplates: availableExperienceTemplates };
-  } catch (error) {
-    console.error('Error loading available experience templates:', error);
-    throw error;
-  }
-}
-
-// GET AVAILABLE ASSESSMENTS for pathway content selection
-async function getAvailableAssessments(pathwayID, token) {
-  try {
-    const employeeEmail = jwtDecode(token).email;
-    
-    const employee = await prisma.employees.findFirst({
-      where: { email: employeeEmail }
-    });
-    
-    if (!employee) {
-      throw new Error('Employee not found');
-    }
-
-
-    const allAssessments = await prisma.assessments.findMany({
-      include: {
-        manager: {
-          select: { username: true, role: true }
-        }
-      }
-    });
-
-
-    const pathwayAssessments = await prisma.pathways_assessments.findMany({
-      where: { pathwayID: parseInt(pathwayID) },
-      select: { assessmentID: true }
-    });
-    
-    
-    const existingAssessmentIDs = pathwayAssessments.map(pa => pa.assessmentID);
-
-    // This block is replaced by the previous replacement
-  } catch (error) {
-    console.error('Error loading available assessments:', error);
-    throw error;
-  }
-}
-
-// GET AVAILABLE EXPERIENCE TEMPLATES for pathway content selection
-async function getAvailableExperienceTemplates(pathwayID, token) {
-  try {
-    const employeeEmail = jwtDecode(token).email;
-    
-    const employee = await prisma.employees.findFirst({
-      where: { email: employeeEmail }
-    });
-    
-    if (!employee) {
-      throw new Error('Employee not found');
-    }
-
+    console.log('getAvailableExperienceTemplates: Employee found:', employee.username);
 
     const allTemplates = await prisma.experience_templates.findMany();
 
+    console.log('getAvailableExperienceTemplates: Total templates found:', allTemplates.length);
 
     const pathwayTemplates = await prisma.pathways_experience_templates.findMany({
       where: { pathwayID: parseInt(pathwayID) },
       select: { experience_templateID: true }
     });
     
+    console.log('getAvailableExperienceTemplates: Templates already in pathway:', pathwayTemplates.length);
     
     const existingTemplateIDs = pathwayTemplates.map(pt => pt.experience_templateID);
 
@@ -436,6 +313,7 @@ async function getAvailableExperienceTemplates(pathwayID, token) {
       isInPathway: existingTemplateIDs.includes(template.experience_templateID)
     }));
 
+    console.log('getAvailableExperienceTemplates: Returning templates with status:', templatesWithStatus.length);
     return { experienceTemplates: templatesWithStatus };
   } catch (error) {
     console.error('Error loading available experience templates:', error);
@@ -556,6 +434,7 @@ async function addCourseToPathway(pathwayID, courseID, token) {
       }
     }
 
+    console.log('addCourseToPathway: Course added successfully and employees enrolled');
     return result;
   } catch (error) {
     console.error('Error adding course to pathway:', error);
@@ -586,6 +465,7 @@ async function removeCourseFromPathway(pathwayID, courseID, token) {
       }
     });
 
+    console.log('removeCourseFromPathway: Course removed successfully');
     return result;
   } catch (error) {
     console.error('Error removing course from pathway:', error);
@@ -917,6 +797,7 @@ async function createExperienceTemplate(templateData, token) {
       }
     });
 
+    console.log('createExperienceTemplate: New template created successfully');
     return newTemplate;
   } catch (error) {
     console.error('Error creating experience template:', error);
@@ -947,6 +828,7 @@ async function updateExperienceTemplate(templateID, updateData, token) {
       updateFields.minimumDuration = parseFloat(updateData.minimumDuration) || 0;
     }
 
+    console.log('updateExperienceTemplate: Update fields:', updateFields);
 
     const result = await prisma.experience_templates.update({
       where: {
@@ -955,6 +837,7 @@ async function updateExperienceTemplate(templateID, updateData, token) {
       data: updateFields
     });
 
+    console.log('updateExperienceTemplate: Update successful:', result);
     return result;
   } catch (error) {
     console.error('Error updating experience template:', error);
@@ -1006,6 +889,7 @@ async function deleteExperienceTemplate(templateID, token) {
       }
     });
 
+    console.log('deleteExperienceTemplate: Template deleted successfully');
     return result;
   } catch (error) {
     console.error('Error deleting experience template:', error);
@@ -1023,6 +907,7 @@ module.exports = {
   updateAssessmentEnrollment,
   updatePathway,
   getManagedPathways,
+  updatePathwayEnrollment,
   // Pathway content management
   getAvailableCourses,
   getAvailableAssessments,
@@ -1096,6 +981,7 @@ module.exports = {
 //   const pExperienceTemplates = await db.query(
 //     'SELECT experienceTemplateID FROM pathways_experience_templates WHERE pathwayID = '+pID+';'
 //     ); 
+//   console.log("C: ", pCourses,"\nA: ",pAssessments,"\nET:",pExperienceTemplates);
 // }
 
 // // // POST / ADD COURSE
@@ -1123,6 +1009,7 @@ module.exports = {
 // GET MANAGED COURSES WITH ENROLLMENTS
 async function getManagedCourses(managerId) {
   try {
+    console.log('getManagedCourses: Getting courses for manager:', managerId);
     
     const courses = await prisma.courses.findMany({
       where: {
@@ -1146,6 +1033,7 @@ async function getManagedCourses(managerId) {
       }
     });
 
+    console.log('getManagedCourses: Found courses:', courses.length);
 
     // Flatten the data structure for easier frontend consumption
     const flattenedCourses = courses.map(course => ({
@@ -1179,6 +1067,7 @@ async function getManagedCourses(managerId) {
 // UPDATE COURSE ENROLLMENT
 async function updateCourseEnrollment(enrollmentId, updateData) {
   try {
+    console.log('updateCourseEnrollment: Updating enrollment:', enrollmentId, updateData);
     
     const updateFields = {};
     
@@ -1198,6 +1087,7 @@ async function updateCourseEnrollment(enrollmentId, updateData) {
       updateFields.completionDate = updateData.completionDate;
     }
 
+    console.log('updateCourseEnrollment: Update fields:', updateFields);
 
     const result = await prisma.employees_courses.update({
       where: {
@@ -1206,6 +1096,7 @@ async function updateCourseEnrollment(enrollmentId, updateData) {
       data: updateFields
     });
 
+    console.log('updateCourseEnrollment: Update successful:', result);
     return result;
   } catch (error) {
     console.error('Error updating course enrollment:', error);
@@ -1216,6 +1107,7 @@ async function updateCourseEnrollment(enrollmentId, updateData) {
 // UPDATE COURSE DETAILS
 async function updateCourse(courseID, updateData) {
   try {
+    console.log('updateCourse: Updating course:', courseID, updateData);
     
     const updateFields = {};
     
@@ -1239,6 +1131,7 @@ async function updateCourse(courseID, updateData) {
       updateFields.delivery_location = updateData.deliveryLocation;
     }
 
+    console.log('updateCourse: Update fields:', updateFields);
 
     const result = await prisma.courses.update({
       where: {
@@ -1247,6 +1140,7 @@ async function updateCourse(courseID, updateData) {
       data: updateFields
     });
 
+    console.log('updateCourse: Update successful:', result);
     return result;
   } catch (error) {
     console.error('Error updating course:', error);
@@ -1257,6 +1151,7 @@ async function updateCourse(courseID, updateData) {
 // GET MANAGED ASSESSMENTS WITH ENROLLMENTS
 async function getManagedAssessments(managerId) {
   try {
+    console.log('getManagedAssessments: Getting assessments for manager:', managerId);
     
     const assessments = await prisma.assessments.findMany({
       where: {
@@ -1280,6 +1175,7 @@ async function getManagedAssessments(managerId) {
       }
     });
 
+    console.log('getManagedAssessments: Found assessments:', assessments.length);
 
     // Flatten the data structure for easier frontend consumption
     const flattenedAssessments = assessments.map(assessment => ({
@@ -1316,6 +1212,7 @@ async function getManagedAssessments(managerId) {
 // UPDATE ASSESSMENT DETAILS
 async function updateAssessment(assessmentID, updateData) {
   try {
+    console.log('updateAssessment: Updating assessment:', assessmentID, updateData);
     
     const updateFields = {};
     
@@ -1351,6 +1248,7 @@ async function updateAssessment(assessmentID, updateData) {
       updateFields.expiry = updateData.expiry ? parseInt(updateData.expiry) : null;
     }
 
+    console.log('updateAssessment: Update fields:', updateFields);
 
     const result = await prisma.assessments.update({
       where: {
@@ -1359,6 +1257,7 @@ async function updateAssessment(assessmentID, updateData) {
       data: updateFields
     });
 
+    console.log('updateAssessment: Update successful:', result);
     return result;
   } catch (error) {
     console.error('Error updating assessment:', error);
@@ -1369,6 +1268,7 @@ async function updateAssessment(assessmentID, updateData) {
 // UPDATE ASSESSMENT ENROLLMENT
 async function updateAssessmentEnrollment(enrollmentId, updateData) {
   try {
+    console.log('updateAssessmentEnrollment: Updating enrollment:', enrollmentId, updateData);
     
     const updateFields = {};
     
@@ -1390,6 +1290,7 @@ async function updateAssessmentEnrollment(enrollmentId, updateData) {
       updateFields.completionDate = updateData.completionDate;
     }
 
+    console.log('updateAssessmentEnrollment: Update fields:', updateFields);
 
     const result = await prisma.employees_assessments.update({
       where: {
@@ -1398,6 +1299,7 @@ async function updateAssessmentEnrollment(enrollmentId, updateData) {
       data: updateFields
     });
 
+    console.log('updateAssessmentEnrollment: Update successful:', result);
     return result;
   } catch (error) {
     console.error('Error updating assessment enrollment:', error);

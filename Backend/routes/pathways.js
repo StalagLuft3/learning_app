@@ -66,7 +66,7 @@ router.post("/createPathway", async function (req, res) {
   
   if (!token) {
     console.log("No authentication token provided - returning 401");
-    return res.status(401).json({ errors: "Authentication required. Please log in." });
+    return res.status(401).json({ error: "Authentication required. Please log in." });
   }
   
   try {
@@ -79,9 +79,9 @@ router.post("/createPathway", async function (req, res) {
     console.error("Error details:", err.message);
     console.error("Error stack:", err.stack);
     if (err.message.includes('jwt') || err.message.includes('token') || err.message.includes('Invalid token')) {
-      return res.status(401).json({ errors: "Invalid authentication token. Please log in again." });
+      return res.status(401).json({ error: "Invalid authentication token. Please log in again." });
     }
-    return res.status(500).json({ errors: "Error when trying to create Pathway. Try again later!" });
+    return res.status(500).json({ error: "Error when trying to create Pathway. Try again later!" });
   }
 });
 
@@ -134,5 +134,6 @@ router.delete("/deletePathway/:pathwayId", async function(req, res) {
 });
 
 module.exports = router
+
 
 

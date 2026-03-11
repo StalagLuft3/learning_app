@@ -46,7 +46,7 @@ router.post("/enrolCourse", async function(req, res) {
   
   if (!token) {
     console.log("No authentication token provided");
-    return res.status(401).json({ errors: "Authentication required. Please log in." });
+    return res.status(401).json({ error: "Authentication required. Please log in." });
   }
   
   const enrolDate = new Date().toISOString().substring(0,10)
@@ -58,9 +58,9 @@ router.post("/enrolCourse", async function(req, res) {
     } catch (err) {
       console.error("Error enrolling in course:", err);
       if (err.message === 'Already enrolled in this course') {
-        return res.status(400).json({errors: "You are already enrolled in this course"});
+        return res.status(400).json({ error: "You are already enrolled in this course"});
       }
-      return res.status(500).json({errors: "Error when trying to enrol on course. Try again later!"});
+      return res.status(500).json({ error: "Error when trying to enrol on course. Try again later!"});
         }
 });
 
@@ -77,7 +77,7 @@ router.post("/enrolAssessment", async function(req, res) {
   
   if (!token) {
     console.log("No authentication token provided");
-    return res.status(401).json({ errors: "Authentication required. Please log in." });
+    return res.status(401).json({ error: "Authentication required. Please log in." });
   }
   
   const enrolDate = new Date().toISOString().substring(0,10)
@@ -89,9 +89,9 @@ router.post("/enrolAssessment", async function(req, res) {
     } catch (err) {
         console.error("Error enrolling in assessment:", err);
         if (err.message === 'Already enrolled in this assessment') {
-          return res.status(400).json({errors: "You are already enrolled in this assessment"});
+          return res.status(400).json({ error: "You are already enrolled in this assessment"});
         }
-        return res.status(500).json({errors: "Error when trying to enrol on assesment. Try again later!"});
+        return res.status(500).json({ error: "Error when trying to enrol on assesment. Try again later!"});
         }
 });
 
@@ -108,7 +108,7 @@ router.post("/createCourse", async function (req, res) {
   
   if (!token) {
     console.log("No authentication token provided");
-    return res.status(401).json({ errors: "Authentication required. Please log in." });
+    return res.status(401).json({ error: "Authentication required. Please log in." });
   }
   
   try {
@@ -121,7 +121,7 @@ router.post("/createCourse", async function (req, res) {
     });
   } catch (err) {
     console.error("Create course error:", err);
-    return res.status(500).json({ errors: "Error when trying to create course. Try again later!" });
+    return res.status(500).json({ error: "Error when trying to create course. Try again later!" });
   }
 });
 
@@ -138,7 +138,7 @@ router.post("/createAssessment", async function (req, res) {
   
   if (!token) {
     console.log("No authentication token provided");
-    return res.status(401).json({ errors: "Authentication required. Please log in." });
+    return res.status(401).json({ error: "Authentication required. Please log in." });
   }
   
   try {
@@ -151,7 +151,7 @@ router.post("/createAssessment", async function (req, res) {
     });
   } catch (err) {
     console.error("Create assessment error:", err);
-    return res.status(500).json({ errors: "Error when trying to create assessment. Try again later!" });
+    return res.status(500).json({ error: "Error when trying to create assessment. Try again later!" });
   }
 });
 

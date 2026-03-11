@@ -1,5 +1,7 @@
 const router = require("express").Router();
-const manageContents = require('../services/manageContents');
+const managePathways = require('../services/managePathways');
+const manageCourses = require('../services/manageCourses');
+const manageAssessments = require('../services/manageAssessments');
 
 // GET /courses/:managerId - Get courses managed by a specific user with enrollments
 router.get('/courses/:managerId', async function(req, res) {
@@ -15,7 +17,7 @@ router.get('/courses/:managerId', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await manageContents.getManagedCourses(managerId);
+    const data = await manageCourses.getManagedCourses(managerId);
     console.log('Managed courses found:', data.courses.length);
     
     res.json(data);
@@ -39,7 +41,7 @@ router.put('/updateCourseEnrollment', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const result = await manageContents.updateCourseEnrollment(enrollmentId, updateData);
+    const result = await manageCourses.updateCourseEnrollment(enrollmentId, updateData);
     console.log('Course enrollment updated successfully');
     
     res.json({ message: 'Course enrollment updated successfully', result });
@@ -63,7 +65,7 @@ router.put('/updateCourse', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const result = await manageContents.updateCourse(courseID, { courseName, description, duration, deliveryMethod, deliveryLocation });
+    const result = await manageCourses.updateCourse(courseID, { courseName, description, duration, deliveryMethod, deliveryLocation });
     console.log('Course updated successfully');
     
     res.json({ message: 'Course updated successfully', result });
@@ -87,7 +89,7 @@ router.get('/assessments/:managerId', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await manageContents.getManagedAssessments(managerId);
+    const data = await manageAssessments.getManagedAssessments(managerId);
     console.log('Managed assessments found:', data.assessments.length);
     
     res.json(data);
@@ -111,7 +113,7 @@ router.put('/updateAssessment', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const result = await manageContents.updateAssessment(assessmentID, { name, description, deliveryMethod, deliveryLocation, duration, maxScore, passingScore, expiry });
+    const result = await manageAssessments.updateAssessment(assessmentID, { name, description, deliveryMethod, deliveryLocation, duration, maxScore, passingScore, expiry });
     console.log('Assessment updated successfully');
     
     res.json({ message: 'Assessment updated successfully', result });
@@ -135,7 +137,7 @@ router.put('/updateAssessmentEnrollment', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const result = await manageContents.updateAssessmentEnrollment(enrollmentId, updateData);
+    const result = await manageAssessments.updateAssessmentEnrollment(enrollmentId, updateData);
     console.log('Assessment enrollment updated successfully');
     
     res.json({ message: 'Assessment enrollment updated successfully', result });
@@ -154,7 +156,7 @@ router.get('/pathwaysList', async function(req, res, next) {
       return res.status(401).json({ error: "Authentication required" });
     }
     
-    const pathwaysList = await manageContents.getPathwaysList(token);
+    const pathwaysList = await managePathways.getPathwaysList(token);
     return res.status(200).json({ pathwaysList });
   } catch (err) { 
     console.error(`Error while loading pathway to edit!`, err.message);
@@ -162,63 +164,6 @@ router.get('/pathwaysList', async function(req, res, next) {
   }
 });
 
-
-// GET /
-router.get('/', async function(req, res, next) {
-  try{
-    const token = req.cookies["x-auth-token"];
-    
-    if (!token) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-    
-    const x = await manageContents.getContents(token);
-    console.log(x)
-    return res.status(200).json(x);
-    // res.render("managePathways", {  x : x.data, 
-    //                                 u: x.user, 
-    //                                 p: x.pathway})/// this jsut needs simplifying into separate fetches and calling easier to make Management work better. Then Done! Over to PRISMA!
-  } catch (err) {
-    console.error(`Error while loading pathway to edit!`, err.message);
-    return res.status(500).json({ error: err.message });
-  }
-});
-
-// POST / ADD COURSE
-router.post("/addCourse", async function(req, res) {
-  const addCourse = req.body.addC;
-  const token = req.cookies["x-auth-token"]
-  try {                   
-    await manageContents.addCourse(addCourse, token)
-    res.redirect("/managePathways")
-    } catch (err) {
-        return res.render("errors", {errors : err});
-        }
-});
-
-// POST / ADD ASSESSMENT
-router.post("/addAssessment", async function(req, res) {
-  const addAssessment = req.body.addA;
-  const token = req.cookies["x-auth-token"]
-  try {                   
-    await manageContents.addAssessment(addAssessment, token)
-    res.redirect("/manageePathways")
-    } catch (err) {
-        return res.render("errors", {errors : err});
-        }
-});
-
-// POST / ADD EXPERIENCE TEMPLATE
-router.post("/addExperienceTemplate", async function(req, res) {
-  const {addET, pID} = req.body;
-  const token = req.cookies["x-auth-token"]
-  try {                   
-    await manageContents.addExperienceTemplate(pID, addET, token)
-    res.redirect("/pathways")
-    } catch (err) {
-        return res.render("errors", {errors : err});
-        }
-});
 
 // GET /pathways/:managerId - Get managed pathways with enrollments
 router.get('/pathways/:managerId', async function(req, res) {
@@ -234,36 +179,12 @@ router.get('/pathways/:managerId', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await manageContents.getManagedPathways(managerId);
+    const data = await managePathways.getManagedPathways(managerId);
     console.log('Managed pathways found:', data.pathways.length);
     
     res.json(data);
   } catch (error) {
     console.error('Error fetching managed pathways:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// PUT /updatePathwayEnrollment - Update pathway enrollment status
-router.put('/updatePathwayEnrollment', async function(req, res) {
-  try {
-    const { enrollmentId, ...updateData } = req.body;
-    const token = req.cookies["x-auth-token"];
-    
-    console.log('=== UPDATE PATHWAY ENROLLMENT REQUEST ===');
-    console.log('Enrollment ID:', enrollmentId);
-    console.log('Update data:', updateData);
-    
-    if (!token) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-
-    const result = await manageContents.updatePathwayEnrollment(enrollmentId, updateData);
-    console.log('Pathway enrollment updated successfully');
-    
-    res.json({ message: 'Pathway enrollment updated successfully', result });
-  } catch (error) {
-    console.error('Error updating pathway enrollment:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -283,7 +204,7 @@ router.put("/updatePathway", async function(req, res) {
     }
 
     const updateData = { pathwayName, pathwayDescription };
-    const result = await manageContents.updatePathway(pathwayID, updateData);
+    const result = await managePathways.updatePathway(pathwayID, updateData);
     console.log('Pathway updated successfully');
     
     res.json({ message: 'Pathway updated successfully', result });
@@ -324,7 +245,7 @@ router.put('/bulkUpdateCourseEnrollments', async function(req, res) {
           updateData.score = score;
         }
         
-        const result = await manageContents.updateCourseEnrollment(enrollmentId, updateData);
+        const result = await manageCourses.updateCourseEnrollment(enrollmentId, updateData);
         results.push({ enrollmentId, success: true, result });
       } catch (error) {
         console.error(`Failed to update enrollment ${enrollmentId}:`, error);
@@ -376,7 +297,7 @@ router.put('/bulkUpdateAssessmentEnrollments', async function(req, res) {
         }
         // Remove accreditationDate logic - using completionDate instead
         
-        const result = await manageContents.updateAssessmentEnrollment(enrollmentId, updateData);
+        const result = await manageAssessments.updateAssessmentEnrollment(enrollmentId, updateData);
         results.push({ enrollmentId, success: true, result });
       } catch (error) {
         console.error(`Failed to update assessment enrollment ${enrollmentId}:`, error);
@@ -397,52 +318,54 @@ router.put('/bulkUpdateAssessmentEnrollments', async function(req, res) {
   }
 });
 
+// DEPRECATED ROUTE - updatePathwayEnrollment function doesn't exist in managePathways service
+// TODO: Implement pathway enrollment management or remove if not needed  
 // PUT /bulkUpdatePathwayEnrollments - Bulk update pathway enrollments
-router.put('/bulkUpdatePathwayEnrollments', async function(req, res) {
-  try {
-    const { enrollmentIds, newStatus } = req.body;
-    const token = req.cookies["x-auth-token"];
-    
-    console.log('=== BULK UPDATE PATHWAY ENROLLMENTS REQUEST ===');
-    console.log('Enrollment IDs:', enrollmentIds);
-    console.log('New status:', newStatus);
-    
-    if (!token) {
-      return res.status(401).json({ error: "Authentication required" });
-    }
-
-    if (!enrollmentIds || !Array.isArray(enrollmentIds) || enrollmentIds.length === 0) {
-      return res.status(400).json({ error: "Valid enrollment IDs are required" });
-    }
-
-    if (!newStatus) {
-      return res.status(400).json({ error: "New status is required" });
-    }
-
-    const results = [];
-    for (const enrollmentId of enrollmentIds) {
-      try {
-        const updateData = { newStatus };
-        const result = await manageContents.updatePathwayEnrollment(enrollmentId, updateData);
-        results.push({ enrollmentId, success: true, result });
-      } catch (error) {
-        console.error(`Failed to update pathway enrollment ${enrollmentId}:`, error);
-        results.push({ enrollmentId, success: false, error: error.message });
-      }
-    }
-    
-    const successCount = results.filter(r => r.success).length;
-    console.log(`Bulk pathway update completed: ${successCount}/${enrollmentIds.length} successful`);
-    
-    res.json({ 
-      message: `Bulk update completed: ${successCount}/${enrollmentIds.length} successful`,
-      results 
-    });
-  } catch (error) {
-    console.error('Error in bulk update pathway enrollments:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// router.put('/bulkUpdatePathwayEnrollments', async function(req, res) {
+//   try {
+//     const { enrollmentIds, newStatus } = req.body;
+//     const token = req.cookies["x-auth-token"];
+//     
+//     console.log('=== BULK UPDATE PATHWAY ENROLLMENTS REQUEST ===');
+//     console.log('Enrollment IDs:', enrollmentIds);
+//     console.log('New status:', newStatus);
+//     
+//     if (!token) {
+//       return res.status(401).json({ error: "Authentication required" });
+//     }
+//
+//     if (!enrollmentIds || !Array.isArray(enrollmentIds) || enrollmentIds.length === 0) {
+//       return res.status(400).json({ error: "Valid enrollment IDs are required" });
+//     }
+//
+//     if (!newStatus) {
+//       return res.status(400).json({ error: "New status is required" });
+//     }
+//
+//     const results = [];
+//     for (const enrollmentId of enrollmentIds) {
+//       try {
+//         const updateData = { newStatus };
+//         const result = await managePathways.updatePathwayEnrollment(enrollmentId, updateData);
+//         results.push({ enrollmentId, success: true, result });
+//       } catch (error) {
+//         console.error(`Failed to update pathway enrollment ${enrollmentId}:`, error);
+//         results.push({ enrollmentId, success: false, error: error.message });
+//       }
+//     }
+//     
+//     const successCount = results.filter(r => r.success).length;
+//     console.log(`Bulk pathway update completed: ${successCount}/${enrollmentIds.length} successful`);
+//     
+//     res.json({ 
+//       message: `Bulk update completed: ${successCount}/${enrollmentIds.length} successful`,
+//       results 
+//     });
+//   } catch (error) {
+//     console.error('Error in bulk update pathway enrollments:', error);
+//     res.status(500).json({ error: error.message });
+//   }
+// });
 
 // ===== DEBUG/TEST ROUTES =====
 
@@ -564,7 +487,7 @@ router.get('/pathways/:pathwayId/available-courses', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await manageContents.getAvailableCourses(pathwayId, token);
+    const data = await managePathways.getAvailableCourses(pathwayId, token);
     console.log('Available courses found:', data.courses.length);
     
     res.json(data);
@@ -587,7 +510,7 @@ router.get('/pathways/:pathwayId/available-assessments', async function(req, res
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await manageContents.getAvailableAssessments(pathwayId, token);
+    const data = await managePathways.getAvailableAssessments(pathwayId, token);
     console.log('Available assessments found:', data.assessments.length);
     
     res.json(data);
@@ -610,7 +533,7 @@ router.get('/pathways/:pathwayId/available-experience-templates', async function
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await manageContents.getAvailableExperienceTemplates(pathwayId, token);
+    const data = await managePathways.getAvailableExperienceTemplates(pathwayId, token);
     console.log('Available experience templates found:', data.experienceTemplates.length);
     
     res.json(data);
@@ -633,7 +556,7 @@ router.get('/pathways/:pathwayId/available-pathways', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await manageContents.getAvailablePathways(pathwayId, token);
+    const data = await managePathways.getAvailablePathways(pathwayId, token);
     console.log('Available pathways found:', data.pathways.length);
     
     res.json(data);
@@ -661,7 +584,7 @@ router.post('/pathways/:pathwayId/add-course', async function(req, res) {
       return res.status(400).json({ error: "Course ID is required" });
     }
 
-    const result = await manageContents.addCourseToPathway(pathwayId, courseId, token);
+    const result = await managePathways.addCourseToPathway(pathwayId, courseId, token);
     console.log('Course added to pathway successfully');
     
     res.json({ 
@@ -688,7 +611,7 @@ router.delete('/pathways/:pathwayId/remove-course/:courseId', async function(req
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const result = await manageContents.removeCourseFromPathway(pathwayId, courseId, token);
+    const result = await managePathways.removeCourseFromPathway(pathwayId, courseId, token);
     console.log('Course removed from pathway successfully');
     
     res.json({ 
@@ -719,7 +642,7 @@ router.post('/pathways/:pathwayId/add-assessment', async function(req, res) {
       return res.status(400).json({ error: "Assessment ID is required" });
     }
 
-    const result = await manageContents.addAssessmentToPathway(pathwayId, assessmentId, token);
+    const result = await managePathways.addAssessmentToPathway(pathwayId, assessmentId, token);
     console.log('Assessment added to pathway successfully');
     
     res.json({ 
@@ -746,7 +669,7 @@ router.delete('/pathways/:pathwayId/remove-assessment/:assessmentId', async func
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const result = await manageContents.removeAssessmentFromPathway(pathwayId, assessmentId, token);
+    const result = await managePathways.removeAssessmentFromPathway(pathwayId, assessmentId, token);
     console.log('Assessment removed from pathway successfully');
     
     res.json({ 
@@ -777,7 +700,7 @@ router.post('/pathways/:pathwayId/add-experience-template', async function(req, 
       return res.status(400).json({ error: "Template ID is required" });
     }
 
-    const result = await manageContents.addExperienceTemplateToPathway(pathwayId, templateId, token);
+    const result = await managePathways.addExperienceTemplateToPathway(pathwayId, templateId, token);
     console.log('Experience template added to pathway successfully');
     
     res.json({ 
@@ -804,7 +727,7 @@ router.delete('/pathways/:pathwayId/remove-experience-template/:templateId', asy
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const result = await manageContents.removeExperienceTemplateFromPathway(pathwayId, templateId, token);
+    const result = await managePathways.removeExperienceTemplateFromPathway(pathwayId, templateId, token);
     console.log('Experience template removed from pathway successfully');
     
     res.json({ 
@@ -831,7 +754,7 @@ router.post('/pathways/:pathwayId/copy-from/:sourcePathwayId', async function(re
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const result = await manageContents.copyPathwayContents(pathwayId, sourcePathwayId, token);
+    const result = await managePathways.copyPathwayContents(pathwayId, sourcePathwayId, token);
     console.log('Pathway contents copied successfully:', result);
     
     res.json({ 
@@ -857,7 +780,7 @@ router.get('/experience-templates', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await manageContents.getAllExperienceTemplates(token);
+    const data = await managePathways.getAllExperienceTemplates(token);
     console.log('Experience templates found:', data.experienceTemplates.length);
     
     res.json(data);
@@ -885,7 +808,7 @@ router.post('/experience-templates', async function(req, res) {
     }
 
     const templateData = { experienceDescription, minimumDuration };
-    const result = await manageContents.createExperienceTemplate(templateData, token);
+    const result = await managePathways.createExperienceTemplate(templateData, token);
     console.log('Experience template created successfully');
     
     res.status(201).json({ 
@@ -914,7 +837,7 @@ router.put('/experience-templates/:templateId', async function(req, res) {
     }
 
     const updateData = { experienceDescription, minimumDuration };
-    const result = await manageContents.updateExperienceTemplate(templateId, updateData, token);
+    const result = await managePathways.updateExperienceTemplate(templateId, updateData, token);
     console.log('Experience template updated successfully');
     
     res.json({ 
@@ -940,7 +863,7 @@ router.delete('/experience-templates/:templateId', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const result = await manageContents.deleteExperienceTemplate(templateId, token);
+    const result = await managePathways.deleteExperienceTemplate(templateId, token);
     console.log('Experience template deleted successfully');
     
     res.json({ 
@@ -954,3 +877,4 @@ router.delete('/experience-templates/:templateId', async function(req, res) {
 });
 
 module.exports = router
+

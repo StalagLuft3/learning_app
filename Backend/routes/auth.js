@@ -30,7 +30,7 @@ router.post("/register",[
             const existingUser = await auth.search(email);
             if(existingUser.result.length >= 1 && existingUser.result[0].email === email){
                 console.log('Email already exists:', email);
-                return res.status(400).json({errors: "Email already registered"});
+                return res.status(400).json({ error: "Email already registered"});
             }
             
             const hashedPassword = await bcrypt.hash(password, 10);
