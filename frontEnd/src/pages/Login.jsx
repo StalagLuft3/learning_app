@@ -162,6 +162,7 @@ function Login() {
                         variant="primary" 
                         type="submit" 
                         disabled={isLoading}
+                        style={{ marginTop: '16px' }}
                     >
                         {isLoading ? 'Logging in...' : 'Login'}
                     </IcButton>

@@ -31,7 +31,11 @@ function Record() {
   const [enrolledPathways, setEnrolledPathways] = useState([]);
   const [refereesArray, setRefereesArray] = useState([]);
   const [myPathwayDetails, setMyPathwayDetails] = useState([]);
-  const [selectedPathwayID, setSelectedPathwayID] = useState(null); 
+  const [selectedPathwayID, setSelectedPathwayID] = useState(null);
+  const [tempSelectedPathwayID, setTempSelectedPathwayID] = useState(null);
+  const [dialogKey, setDialogKey] = useState(0);
+  const [exportType, setExportType] = useState('all');
+  const [tempExportType, setTempExportType] = useState('all'); 
   const [banner, setBanner] = useState(null); 
   const [radioSelected, setRadioSelected] = useState("false");
   const [dateRange, setDateRange] = useState({ startDate: '', endDate: '' });
@@ -68,16 +72,52 @@ function Record() {
   }, []);
 
   const { totalItems, totalDuration, statsString, expiredItems } = recordStats(fullRecord);
-  const { courseStatsString } = courseRecordStats(fullRecord, getStatusDisplay);
+  
+  // Calculate filtered dataset
+  let selectedPathwayList = getSelectedPathwayList(fullRecord, myPathwayDetails, selectedPathwayID); 
+  let dataSubset = fullRecord; 
+  if (selectedPathwayID !== null && selectedPathwayID !== '') {
+    dataSubset = selectedPathwayList
+  }
+  
+  // Apply date range filtering if dates are selected
+  if (dateRange.startDate && dateRange.endDate) {
+    const startDate = new Date(dateRange.startDate);
+    const endDate = new Date(dateRange.endDate);
+    
+    dataSubset = dataSubset.filter(item => {
+      const recordDate = new Date(item.recordDate);
+      return recordDate >= startDate && recordDate <= endDate;
+    });
+  }
+
+  // Calculate course stats from filtered dataset
+  const { courseStatsString } = courseRecordStats(dataSubset, getStatusDisplay);
+
+  // Generate dynamic secondary heading based on active filters
+  const getDynamicSecondaryHeading = () => {
+    // Always show course stats from filtered dataset
+    // Filter info is shown in chips below, no need to duplicate here
+    return courseStatsString;
+  };
 
   const handleRadioChange = (ev) => {
-    setSelectedPathwayID(ev.detail.value);
-    closeDialog("pathwayFilter");
+    setTempSelectedPathwayID(ev.detail.value);
+  };
+
+  const handleConfirmPathwayFilter = () => {
+    setSelectedPathwayID(tempSelectedPathwayID);
     for (let i = 0; i < enrolledPathways.length; i++) {
-      if (enrolledPathways[i]["pathwayID"] == ev.detail.value) {
+      if (enrolledPathways[i]["pathwayID"] == tempSelectedPathwayID) {
         setBanner(enrolledPathways[i])
       }
     }
+    closeDialog("pathwayFilter");
+  };
+
+  const handleCancelPathwayFilter = () => {
+    setTempSelectedPathwayID(selectedPathwayID); // Reset to current selection
+    closeDialog("pathwayFilter");
   };
 
   const handleSubmitExperience = async (event) => {
@@ -247,6 +287,21 @@ function Record() {
     return { startDate, endDate };
   };
 
+  const handleExportRadioChange = (ev) => {
+    setTempExportType(ev.detail.value);
+  };
+
+  const handleConfirmExport = () => {
+    setExportType(tempExportType);
+    handleExportRecord(tempExportType);
+    closeDialog("exportOptions");
+  };
+
+  const handleCancelExport = () => {
+    setTempExportType(exportType); // Reset to current selection
+    closeDialog("exportOptions");
+  };
+
   const handleExportRecord = (exportType = 'all') => {
     const currentDate = new Date().toLocaleDateString();
     const currentTime = new Date().toLocaleTimeString();
@@ -282,7 +337,7 @@ function Record() {
         const completedDate = safeStatus.toLowerCase().includes('complete') ? recordDate : recordDate;
         const scoreInfo = item.scoreAchieved ? `Score: ${item.scoreAchieved}/${item.max_score}` : '';
         
-        csvData += `"${completedDate}","Assessment","${item.name}","${(item.description || '').replace(/"/g, '""')}","${scoreInfo}","","${item.duration}","${item.username} (${item.role})"\n`;
+        csvData += `"${completedDate}","Assessment","${item.name}","${(item.description || '').replace(/"/g, '""')}","","${scoreInfo}","${item.duration}","${item.username} (${item.role})"\n`;
         
       } else if (item.employee_experienceID) {
         const statusInfo = getStatusDisplay(item);
@@ -299,35 +354,49 @@ function Record() {
     // Add blank separator row
     csvData += `\n`;
     
-    // Calculate summary statistics
-    const totalDuration = exportDataset.reduce((sum, item) => sum + (parseFloat(item.duration) || 0), 0);
+    // Calculate summary statistics using same logic as recordStats
+    let completedItems = 0;
+    let completedDays = 0;
+    let totalItems = 0;
+    let totalDuration = 0;
+    
+    exportDataset.forEach(item => {
+      totalItems += 1;
+      totalDuration += (parseFloat(item.duration) || 0);
+      
+      if (item.currentStatus === "Completed") {
+        completedItems += 1;
+        completedDays += (parseFloat(item.duration) || 0);
+      }
+    });
+    
     const dates = exportDataset.map(item => new Date(item.recordDate)).filter(date => !isNaN(date));
     const earliestDate = dates.length > 0 ? new Date(Math.min(...dates)).toLocaleDateString() : 'No records';
     const latestDate = dates.length > 0 ? new Date(Math.max(...dates)).toLocaleDateString() : 'No records';
     const dateRangeCovered = dates.length > 0 ? `${earliestDate} to ${latestDate}` : 'No date range';
     
     // Add summary information at the bottom
-    csvData += `"EXPORT SUMMARY","","","","","","",""\\n`;
-    csvData += `"Generated on","${currentDate} at ${currentTime}","","","","","",""\\n`;
-    csvData += `"User","${userInfo?.username || 'Unknown'}","","","","","",""\\n`;
-    csvData += `"Export Type","${exportType === 'completed' ? 'Completed Items Only' : 'All Items'}","","","","","",""\\n`;
-    csvData += `"Date Range Covered","${dateRangeCovered}","","","","","",""\\n`;
-    csvData += `"Total Duration","${totalDuration} days","","","","","",""\\n`;
+    csvData += `"EXPORT SUMMARY","","","","","","",""` + '\n';
+    csvData += `"Generated on","${currentDate} at ${currentTime}","","","","","",""` + '\n';
+    csvData += `"User","${userInfo?.username || 'Unknown'}","","","","","",""` + '\n';
+    csvData += `"Export Type","${exportType === 'completed' ? 'Completed Items Only' : 'All Items'}","","","","","",""` + '\n';
+    csvData += `"Date Range Covered","${dateRangeCovered}","","","","","",""` + '\n';
+    csvData += `"Progress Summary","${completedItems} / ${totalItems} Items ( ${completedDays} / ${totalDuration} Days )","","","","","",""` + '\n';
     
     // Add filter information
     if (banner) {
-      csvData += `"Current Pathway","${banner.pathwayName}","${banner.pathwayDescription}","","","","",""\\n`;
-      csvData += `"Pathway Filter","Applied - showing pathway records only","","","","","",""\\n`;
+      csvData += `"Current Pathway","${banner.pathwayName}","${banner.pathwayDescription}","","","","",""` + '\n';
+      csvData += `"Pathway Filter","Applied - showing pathway records only","","","","","",""` + '\n';
     } else {
-      csvData += `"Current Pathway","No pathway selected","","","","","",""\\n`;
+      csvData += `"Current Pathway","No pathway selected","","","","","",""` + '\n';
     }
     if (dateRangeChip) {
-      csvData += `"Date Range Filter","${dateRangeChip.startDate} to ${dateRangeChip.endDate}","","","","","",""\\n`;
+      csvData += `"Date Range Filter","${dateRangeChip.startDate} to ${dateRangeChip.endDate}","","","","","",""` + '\n';
     } else {
-      csvData += `"Date Range Filter","No date filter applied","","","","","",""\\n`;
+      csvData += `"Date Range Filter","No date filter applied","","","","","",""` + '\n';
     }
     
-    csvData += `"Total Records Exported","${exportDataset.length}","","","","","",""\\n`;
+    csvData += `"Total Records Exported","${exportDataset.length}","","","","","",""` + '\n';
     
     // Create and download CSV file
     const blob = new Blob([csvData], { type: 'text/csv' });
@@ -353,30 +422,24 @@ function Record() {
     closeDialog("exportOptions");
   };
   
-  let selectedPathwayList = getSelectedPathwayList(fullRecord, myPathwayDetails, selectedPathwayID); 
   let enrolledPathwaysList = getEnrolledPathwaysList(enrolledPathways).map(
     pathway => <IcRadioOption key={pathway.value} value={pathway.value} label={pathway.label} /> ); 
-  let dataSubset = fullRecord; 
-  if (selectedPathwayID !== null) {
-    dataSubset = selectedPathwayList
-  }
-  
-  // Apply date range filtering if dates are selected
-  if (dateRange.startDate && dateRange.endDate) {
-    const startDate = new Date(dateRange.startDate);
-    const endDate = new Date(dateRange.endDate);
-    
-    dataSubset = dataSubset.filter(item => {
-      const recordDate = new Date(item.recordDate);
-      return recordDate >= startDate && recordDate <= endDate;
-    });
-  }
   
   return (
     <>
       <Header />
-      <IcHero heading={`Your Record${userInfo?.username ? `, ${userInfo.username}` : ''}`} aligned="full-width" secondaryHeading={courseStatsString} secondarySubheading={"Learning Progress - Courses, Assessments & Experiences"} >
-        <IcButton onClick={() => openDialog("pathwayFilter")} slot="interaction" variant="secondary">
+      <IcHero heading={`Your Record${userInfo?.username ? `, ${userInfo.username}` : ''}`} aligned="full-width" secondaryHeading={getDynamicSecondaryHeading()} secondarySubheading={"Learning Progress - Courses, Assessments & Experiences"} >
+        <IcButton onClick={() => openDialog('recordExperience')} slot="interaction" variant="primary">
+          Record Experience
+          <SlottedSVGTemplate mdiIcon={mdiPuzzlePlusOutline} />
+        </IcButton>
+        <IcButton onClick={() => { 
+          setTempSelectedPathwayID(selectedPathwayID); 
+          if (selectedPathwayID === null) {
+            setDialogKey(prev => prev + 1); // Force re-render when no filter active
+          }
+          openDialog("pathwayFilter"); 
+        }} slot="interaction" variant="secondary">
           View by Pathway
           <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
         </IcButton>
@@ -388,13 +451,12 @@ function Record() {
           Set Date Range
           <SlottedSVGTemplate mdiIcon={mdiCalendarRange} />
         </IcButton>
-        <IcButton onClick={() => openDialog("exportOptions")} slot="interaction" variant="secondary">
+        <IcButton onClick={() => { 
+          setTempExportType(exportType); 
+          openDialog("exportOptions"); 
+        }} slot="interaction" variant="secondary">
           Export Record
           <SlottedSVGTemplate mdiIcon={mdiDownload} />
-        </IcButton>
-        <IcButton onClick={() => openDialog('recordExperience')} slot="interaction" variant="primary">
-          Record Experience
-          <SlottedSVGTemplate mdiIcon={mdiPuzzlePlusOutline} />
         </IcButton>
       </IcHero>
 
@@ -415,7 +477,7 @@ function Record() {
           sticky="true"
           heading={banner["pathwayDescription"]}
         >
-        <IcChip slot="heading-adornment" dismissible="true" label={banner["pathwayName"]}  onIcDismiss={() => setBanner(null)}/>
+        <IcChip slot="heading-adornment" dismissible="true" label={banner["pathwayName"]}  onIcDismiss={() => {setBanner(null); setSelectedPathwayID(null); setTempSelectedPathwayID(null);}}/>>
         </IcPageHeader>
       ) : (<></>)}
 
@@ -548,7 +610,7 @@ function Record() {
                     <>
                       <IcTypography slot="adornment" variant="label-uppercase">Your feedback on your experience</IcTypography>
                       <IcTypography slot="adornment">{d.employeeText}</IcTypography>
-                      <IcTypography slot="adornment" variant="label-uppercase">{"Referee's feedback on your experience"}</IcTypography>
+                      <IcTypography slot="adornment" variant="label-uppercase">{`${d.refereeUsername}'s feedback on your experience`}</IcTypography>
                       <IcTypography slot="adornment">{d.refereeText}</IcTypography>
                     </>
                   }
@@ -606,12 +668,12 @@ function Record() {
       open={isDialogOpen("pathwayFilter")}
       closeOnBackdropClick={false}
       heading="Filter by Pathway"
-      buttons="false"
       disable-height-constraint="true"
       selected={radioSelected}
-      onIcDialogClosed={() => closeDialog("pathwayFilter")}
+      onIcDialogClosed={handleCancelPathwayFilter}
+      onIcDialogConfirmed={handleConfirmPathwayFilter}
     >
-      <IcRadioGroup name='pathwayFilter' label="Your Pathway" onIcChange={handleRadioChange}>
+      <IcRadioGroup key={selectedPathwayID === null ? `clean-${dialogKey}` : 'normal'} name='pathwayFilter' label="Your Pathway" value={tempSelectedPathwayID || ''} onIcChange={handleRadioChange}>
         {enrolledPathwaysList}
       </IcRadioGroup>
     </IcDialog>
@@ -677,25 +739,14 @@ function Record() {
       closeOnBackdropClick={true}
       heading="Export Options"
       disable-height-constraint="true"
-      onIcDialogClosed={() => closeDialog("exportOptions")}
+      onIcDialogClosed={handleCancelExport}
+      onIcDialogConfirmed={handleConfirmExport}
     >
       <IcTypography style={{ marginBottom: '16px' }}>Choose what to include in your export:</IcTypography>
-      <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-        <IcButton 
-          variant="primary" 
-          onClick={() => handleExportRecord('completed')}
-        >
-          Export Completed Only
-          <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
-        </IcButton>
-        <IcButton 
-          variant="secondary" 
-          onClick={() => handleExportRecord('all')}
-        >
-          Export All Records
-          <SlottedSVGTemplate mdiIcon={mdiDownload} />
-        </IcButton>
-      </div>
+      <IcRadioGroup name='exportType' label="Export Type" value={tempExportType} onIcChange={handleExportRadioChange}>
+        <IcRadioOption value="all" label="Export All Records" />
+        <IcRadioOption value="completed" label="Export Completed Only" />
+      </IcRadioGroup>
     </IcDialog>
     </>
   )

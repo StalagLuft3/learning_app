@@ -115,11 +115,11 @@ async function loadRecord(token){
       });
     });
 
-    // Sort by course name or assessment name
+    // Sort by date (most recent first)
     fullRecord.sort((a, b) => {
-      const nameA = a.courseName || a.name || a.experienceDescription || '';
-      const nameB = b.courseName || b.name || b.experienceDescription || '';
-      return nameA.localeCompare(nameB);
+      const dateA = new Date(a.recordDate || 0);
+      const dateB = new Date(b.recordDate || 0);
+      return dateB.getTime() - dateA.getTime(); // Descending order (most recent first)
     });
 
     return {
