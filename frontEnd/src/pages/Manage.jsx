@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { IcCardVertical, IcSectionContainer, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcHero, IcButton } from "@ukic/react";
-import { mdiAccountDetails, mdiBookOpenPageVariant } from "@mdi/js";
+import { mdiFileAccount, mdiBookOpenPageVariant } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ITRHeader";
 import Footer from "../components/ITRFooter";
@@ -54,7 +54,7 @@ function Manage() {
             clickable="true"
             onClick={() => window.location.href = '/Record'}
           >
-            <SlottedSVGTemplate mdiIcon={mdiAccountDetails} />
+            <SlottedSVGTemplate mdiIcon={mdiFileAccount} />
             <div slot="interaction-controls" style={{ display: "flex", gap: "16px" }}>
               <IcButton variant="primary" onClick={() => window.location.href = '/Record'}>
                 View Record

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcRadioGroup, IcRadioOption } from "@ukic/react";
-import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckCircle, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiCheckboxMarkedCirclePlusOutline, mdiCheckboxMarkedCircleOutline, mdiDelete } from "@mdi/js";
+import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckDecagramOutline, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiDelete } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 
 import Header from "../components/ContentManagementHeader";
@@ -519,7 +519,7 @@ const AssessmentManagement = () => {
               type="submit"
               disabled={!hasChanges}
             >
-              <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
+              <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
               {hasChanges ? 'Create Assessment' : 'Fill Required Fields'}
             </IcButton>
           </div>
@@ -724,7 +724,7 @@ const AssessmentManagement = () => {
               setCreateDialogOpen(true);
             }}
           >
-            <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
+            <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
             Create Assessment
           </IcButton>
         </IcHero>
@@ -765,7 +765,7 @@ const AssessmentManagement = () => {
             setCreateDialogOpen(true);
           }}
         >
-          <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
+          <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
           Create Assessment
         </IcButton>
         {managedAssessments.length > 0 && activeTab && (
@@ -791,7 +791,7 @@ const AssessmentManagement = () => {
               }
             }}
           >
-            <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCircleOutline} />
+            <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
             Edit Assessment Details
           </IcButton>
         )}
@@ -833,11 +833,12 @@ const AssessmentManagement = () => {
                   setActiveTab(assessment.assessmentID);
                 }}
               >
-                <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
                 {assessment.name}
                 {awaitingCount > 0 && (
                   <IcBadge 
-                    textLabel={awaitingCount.toString()} 
+                    type="text"
+                    label={awaitingCount.toString()} 
                     variant="info" 
                     style={{ marginLeft: '8px' }}
                   />

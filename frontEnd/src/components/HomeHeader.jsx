@@ -1,5 +1,5 @@
 import { SlottedSVG, IcTopNavigation, IcNavigationButton, IcNavigationItem } from "@ukic/react";
-import { mdiEmailFast,mdiLightningBolt} from "@mdi/js";
+import { mdiEmailFast, mdiLightningBolt } from "@mdi/js";
 import SlottedSVGTemplate from "./slottedSVGTemplate";
 
 function Header() {

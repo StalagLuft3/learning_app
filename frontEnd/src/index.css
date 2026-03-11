@@ -25,3 +25,40 @@ ic-select .ic-select-input-container {
 .ic-select-menu {
   z-index: 10000 !important;
 }
+
+.home-card-grid-wrapper {
+  width: 85%;
+  padding: var(--ic-space-xs);
+}
+
+.home-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ic-space-xs);
+}
+
+.home-card-full-width {
+  grid-column: 1 / -1;
+}
+
+.home-card-empty {
+  min-height: 1px;
+}
+
+@media (max-width: 900px) {
+  .home-card-grid-wrapper {
+    width: 100%;
+  }
+
+  .home-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-card-full-width {
+    grid-column: auto;
+  }
+
+  .home-card-empty {
+    display: none;
+  }
+}

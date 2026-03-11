@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcSearchBar, IcAccordion } from "@ukic/react";
-import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckCircle, mdiPencil, mdiCheck, mdiClose, mdiChartLine, mdiPlus, mdiSignDirectionPlus, mdiSignDirection, mdiDelete, mdiNotebook, mdiSchoolOutline, mdiPuzzleOutline } from "@mdi/js";
+import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckDecagramOutline, mdiPencil, mdiCheck, mdiClose, mdiChartLine, mdiPlus, mdiNavigationVariantOutline, mdiDelete, mdiBook, mdiPuzzleOutline } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 
 import Header from "../components/ContentManagementHeader";
@@ -844,7 +844,7 @@ const PathwayManagement = () => {
             alert('Create Pathway functionality - To be implemented');
           }}
         >
-          <SlottedSVGTemplate mdiIcon={mdiSignDirectionPlus} />
+          <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
           Create Pathway
         </IcButton>
         {managedPathways.length > 0 && activeTab && (
@@ -864,7 +864,7 @@ const PathwayManagement = () => {
               }
             }}
           >
-            <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
+            <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
             Edit Pathway Details
           </IcButton>
         )}
@@ -906,11 +906,12 @@ const PathwayManagement = () => {
                   setActiveTab(pathway.pathwayID);
                 }}
               >
-                <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
                 {pathway.pathwayName}
                 {inProgressCount > 0 && (
                   <IcBadge 
-                    textLabel={inProgressCount.toString()} 
+                    type="text"
+                    label={inProgressCount.toString()} 
                     variant="info" 
                     style={{ marginLeft: '8px' }}
                   />
@@ -951,7 +952,7 @@ const PathwayManagement = () => {
                         openContentDialog(pathway.pathwayID, 'courses');
                       }}
                     >
-                      <SlottedSVGTemplate mdiIcon={mdiSchoolOutline} />
+                      <SlottedSVGTemplate mdiIcon={mdiBook} />
                       Add Courses
                     </IcButton>
                     <IcButton 
@@ -961,7 +962,7 @@ const PathwayManagement = () => {
                         openContentDialog(pathway.pathwayID, 'assessments');
                       }}
                     >
-                      <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                      <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
                       Add Assessments
                     </IcButton>
                     <IcButton 
@@ -978,7 +979,7 @@ const PathwayManagement = () => {
                         openContentDialog(pathway.pathwayID, 'pathways');
                       }}
                     >
-                      <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
+                      <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
                       Add Pathway
                     </IcButton>
                   </div>
@@ -1001,7 +1002,7 @@ const PathwayManagement = () => {
                                 subheading={`${course.delivery_location || 'N/A'} | ${course.delivery_method || 'N/A'} | ${course.duration || 'N/A'} Day(s) | Course Manager: ${course.manager?.username || 'Unknown'} (${course.manager?.role || 'Unknown'})`} 
                                 message={course.description || 'No description available'}
                               >
-                                <SlottedSVGTemplate mdiIcon={mdiSchoolOutline} />
+                                <SlottedSVGTemplate mdiIcon={mdiBook} />
                                 <IcStatusTag label="Course" status="info" slot="interaction-button" />
                                 <div slot="interaction-controls" style={{ display: "flex", gap: "8px" }}>
                                   <IcButton 
@@ -1039,7 +1040,7 @@ const PathwayManagement = () => {
                                   subheading={`${assessment.delivery_location || 'N/A'} | ${assessment.delivery_method || 'N/A'} | ${assessment.duration || 'N/A'} Day(s) | Max Score: ${assessment.max_score || 'N/A'} | Passing Score: ${assessment.passing_score || 'N/A'} | Expiry - Year(s): ${expiry} | Assessment Manager: ${assessment.manager?.username || 'Unknown'} (${assessment.manager?.role || 'Unknown'})`}
                                   message={assessment.description || 'No description available'}
                                 >
-                                  <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                                  <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
                                   <IcStatusTag label="Assessment" status="success" slot="interaction-button" />
                                   <div slot="interaction-controls" style={{ display: "flex", gap: "8px" }}>
                                     <IcButton 
@@ -1282,7 +1283,7 @@ const PathwayManagement = () => {
                               onClick={() => addPathwayContent(pathway.pathwayID)}
                               disabled={submitting}
                             >
-                              <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
+                              <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
                               Add Pathway Content
                             </IcButton>
                           </div>

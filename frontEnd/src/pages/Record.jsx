@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcChip, IcDialog, IcHero, IcPageHeader, IcRadioGroup, IcRadioOption, IcSelect, IcStatusTag, IcTextField, IcTypography, IcAlert } from "@ukic/react";
-import { mdiCommentQuoteOutline, mdiCommentQuote, mdiNotebook, mdiCheckCircle, mdiSignDirection, mdiPuzzle, mdiPuzzlePlusOutline, mdiCalendarRange, mdiDownload } from "@mdi/js";
+import { mdiPuzzleOutline, mdiBook, mdiCheckDecagram, mdiNavigationVariant, mdiPuzzle, mdiPuzzlePlusOutline, mdiCalendarRange, mdiDownload } from "@mdi/js";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 
 import Header from "../components/ITRHeader";
@@ -441,7 +441,7 @@ function Record() {
           openDialog("pathwayFilter"); 
         }} slot="interaction" variant="secondary">
           View by Pathway
-          <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
+          <SlottedSVGTemplate mdiIcon={mdiNavigationVariant} />
         </IcButton>
         <IcButton onClick={() => { 
           const defaults = getDefaultDateRange(); 
@@ -477,7 +477,7 @@ function Record() {
           sticky="true"
           heading={banner["pathwayDescription"]}
         >
-        <IcChip slot="heading-adornment" dismissible="true" label={banner["pathwayName"]}  onIcDismiss={() => {setBanner(null); setSelectedPathwayID(null); setTempSelectedPathwayID(null);}}/>>
+        <IcChip slot="heading-adornment" dismissible="true" label={banner["pathwayName"]}  onIcDismiss={() => {setBanner(null); setSelectedPathwayID(null); setTempSelectedPathwayID(null);}}/>
         </IcPageHeader>
       ) : (<></>)}
 
@@ -511,7 +511,7 @@ function Record() {
             <div style={divContainer}>
               <div>
                 <IcCardVertical key={i} style={cardContainer} heading={d.courseName} subheading={`${d.courseDeliveryLocation} | ${d.courseDeliveryMethod} | ${d.duration} Day(s) | Course Manager: ${d.username} (${d.role})`} message={d.courseDescription}>
-                  <SlottedSVGTemplate mdiIcon={mdiNotebook} />
+                  <SlottedSVGTemplate mdiIcon={mdiBook} />
                   <IcTypography slot="adornment" variant="subtitle-small">Status as of {formatDate(d.recordDate)}</IcTypography>
                   <IcStatusTag label={safeStatus} status={safeColor} slot="interaction-button" />
                 </IcCardVertical>
@@ -543,7 +543,7 @@ function Record() {
             <div style={divContainer}>
               <div>
                 <IcCardVertical fullWidth="true" key={i} style={cardContainer} heading={d.name} subheading={`${d.delivery_location} | ${d.delivery_method} | ${d.duration} Day(s) | Max Score: ${d.max_score} | Passing Score: ${d.passing_score} | Expiry - Year(s): ${expiry} | Assessment Manager: ${d.username} (${d.role})`} message={d.description}>
-                  <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                  <SlottedSVGTemplate mdiIcon={mdiCheckDecagram} />
                   <IcTypography slot="adornment" variant="subtitle-small">Details as of  {formatDate(d.recordDate)}</IcTypography>
                   <IcTypography slot="adornment" variant="subtitle-small">Score Achieved: {scoreAchieved}</IcTypography>
                   <IcStatusTag label={safeStatus} status={safeColor} slot="interaction-button" />
@@ -574,7 +574,7 @@ function Record() {
                     <>
                       <div slot="interaction-controls" style={{ display: "flex", gap: "16px" }}>
                         <IcButton onClick={() => openDialog("recordOwnFeedback",experinceID)} variant="primary">Describe Your Experience
-                          <SlottedSVGTemplate mdiIcon={mdiCommentQuote} />
+                          <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
                         </IcButton>
                       </div>
                     </>
@@ -697,7 +697,7 @@ function Record() {
           disabled={submittingFeedback}
         >
           {submittingFeedback ? 'Submitting...' : 'Submit'}
-          <SlottedSVGTemplate mdiIcon={mdiCommentQuoteOutline} />
+          <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
         </IcButton>
       </form>
     </IcDialog>

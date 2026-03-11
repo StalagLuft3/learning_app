@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { IcDialog, IcTextField, IcRadioGroup, IcRadioOption, IcCardVertical, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcAlert } from "@ukic/react";
-import { mdiNotebookPlusOutline, mdiCheckCircleOutline, mdiCheckboxMarkedCirclePlusOutline, mdiNotebookOutline, mdiToggleSwitch, mdiToggleSwitchOff, mdiPencil, mdiDelete } from "@mdi/js";
+import { mdiBook, mdiCheckDecagram, mdiToggleSwitch, mdiToggleSwitchOff, mdiPencil, mdiDelete } from "@mdi/js";
 import { divContainer, sectionContainer, cardContainer } from "../styles/containerLayout";
 
 import Header from "../components/ITRHeader";
@@ -351,7 +351,7 @@ function Contents() {
         </IcButton>
         <IcButton onClick={() => openDialog('createCourse')} slot="interaction" variant="primary">
           Create Course
-          <SlottedSVGTemplate mdiIcon={mdiNotebookPlusOutline} />
+          <SlottedSVGTemplate mdiIcon={mdiBook} />
         </IcButton>
         <IcButton onClick={() => {
           // Reset form and clear previous alerts when opening dialog
@@ -364,7 +364,7 @@ function Contents() {
           openDialog('createAssessment');
         }} slot="interaction" variant="primary">
           Create Assessment
-          <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
+          <SlottedSVGTemplate mdiIcon={mdiCheckDecagram} />
         </IcButton>
       </IcHero>
       
@@ -394,7 +394,7 @@ function Contents() {
                   clickable={editMode && currentUser?.employeeID === d.courseManagerID ? "true" : "false"}
                   onClick={() => editMode && currentUser?.employeeID === d.courseManagerID && handleContentEdit(d)}
                 >
-                  <SlottedSVGTemplate mdiIcon={mdiNotebookOutline} />
+                  <SlottedSVGTemplate mdiIcon={mdiBook} />
                   {editMode && currentUser?.employeeID === d.courseManagerID ? (
                     <IcStatusTag status="success" label="Editable" variant="filled" slot="adornment" size="small" />
                   ) : (
@@ -433,7 +433,7 @@ function Contents() {
                   clickable={editMode && currentUser?.employeeID === d.manager_ID ? "true" : "false"}
                   onClick={() => editMode && currentUser?.employeeID === d.manager_ID && handleContentEdit(d)}
                 >
-                <SlottedSVGTemplate mdiIcon={mdiCheckCircleOutline} />
+                <SlottedSVGTemplate mdiIcon={mdiCheckDecagram} />
                 {editMode && currentUser?.employeeID === d.manager_ID ? (
                   <IcStatusTag status="success" label="Editable" variant="filled" slot="adornment" size="small" />
                 ) : (

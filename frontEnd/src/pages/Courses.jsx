@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { IcDialog, IcTextField, IcRadioGroup, IcRadioOption, IcCardVertical, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcAlert } from "@ukic/react";
-import { mdiNotebookPlusOutline, mdiNotebookOutline } from "@mdi/js";
+import { mdiBook } from "@mdi/js";
 import { divContainer, sectionContainer, cardContainer } from "../styles/containerLayout";
 
 import Header from "../components/ITRHeader";
@@ -103,7 +103,7 @@ function Courses() {
         />
         <IcButton onClick={() => openDialog('createCourse')} slot="interaction" variant="primary">
           Create Course
-          <SlottedSVGTemplate mdiIcon={mdiNotebookPlusOutline} />
+          <SlottedSVGTemplate mdiIcon={mdiBook} />
         </IcButton>
       </IcHero>
       
@@ -129,7 +129,7 @@ function Courses() {
                 subheading={`${course.delivery_location} | ${course.delivery_method} | ${course.duration} Day(s) | Course Manager: ${course.username} (${course.role})`} 
                 message={course.description}
               >
-                <SlottedSVGTemplate mdiIcon={mdiNotebookOutline} />
+                <SlottedSVGTemplate mdiIcon={mdiBook} />
                 {(() => {
                   if (isEnrolledOnCourseList.includes(course.courseID)) {
                     // Find the enrollment record for this course to get the status

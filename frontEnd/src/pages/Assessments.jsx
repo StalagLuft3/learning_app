@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { IcDialog, IcTextField, IcRadioGroup, IcRadioOption, IcCardVertical, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcAlert } from "@ukic/react";
-import { mdiCheckboxMarkedCirclePlusOutline, mdiCheckCircleOutline } from "@mdi/js";
+import { mdiCheckDecagram } from "@mdi/js";
 import { divContainer, sectionContainer, cardContainer } from "../styles/containerLayout";
 
 import Header from "../components/ITRHeader";
@@ -109,7 +109,7 @@ function Assessments() {
           openDialog('createAssessment');
         }} slot="interaction" variant="primary">
           Create Assessment
-          <SlottedSVGTemplate mdiIcon={mdiCheckboxMarkedCirclePlusOutline} />
+          <SlottedSVGTemplate mdiIcon={mdiCheckDecagram} />
         </IcButton>
       </IcHero>
       
@@ -136,7 +136,7 @@ function Assessments() {
                 subheading={`${assessment.delivery_location} | ${assessment.delivery_method} | ${assessment.duration} Day(s) | Max Score: ${assessment.max_score} | Passing Score: ${assessment.passing_score} | Expiry - Year(s): ${expiry} | Assessment Manager: ${assessment.username || 'N/A'} (${assessment.role || 'N/A'})`} 
                 message={assessment.description}
               >
-                <SlottedSVGTemplate mdiIcon={mdiCheckCircleOutline} />
+                <SlottedSVGTemplate mdiIcon={mdiCheckDecagram} />
                 {(() => {
                   if (isEnrolledOnAssessmentList.includes(assessment.assessmentID)) {
                     return <IcStatusTag status="neutral" label="Enrolled" variant="filled" slot="adornment" size="small" />

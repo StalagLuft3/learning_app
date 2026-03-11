@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IcAccordion, IcDialog, IcCardVertical, IcButton, IcStatusTag, IcSectionContainer, IcHero, IcTextField, IcAlert } from "@ukic/react";
-import { mdiSignDirection, mdiSignDirectionPlus, mdiCheckDecagramOutline, mdiSchoolOutline, mdiPuzzleOutline } from "@mdi/js";
+import { mdiNavigationVariant, mdiCheckDecagramOutline, mdiBook, mdiPuzzleOutline } from "@mdi/js";
 import { cardContainer } from "../styles/containerLayout";
 
 import Header from "../components/ITRHeader";
@@ -145,7 +145,7 @@ function Pathways() {
 
         <IcButton onClick={() => openDialog('createPathway')} slot="interaction" variant="primary"
         >Create Pathway
-          <SlottedSVGTemplate mdiIcon={mdiSignDirectionPlus} />
+          <SlottedSVGTemplate mdiIcon={mdiNavigationVariant} />
         </IcButton>
 
       </IcHero>
@@ -166,7 +166,7 @@ function Pathways() {
           {searchMatch.map((pl, i) =>
             <IcSectionContainer type="full-width" >
               <IcAccordion heading={pl.pathwayName} key={i}>
-              <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
+              <SlottedSVGTemplate mdiIcon={mdiNavigationVariant} />
                 <IcSectionContainer>
                   <div>
                     <IcCardVertical 
@@ -191,7 +191,7 @@ function Pathways() {
                     if (c.courseID) {
                       return (
                         <IcCardVertical fullWidth="true" style={cardContainer} key={j} heading={c.courses?.courseName || 'Course'} subheading={`${c.courses?.delivery_location || 'N/A'} | ${c.courses?.delivery_method || 'N/A'} | ${c.courses?.duration || 'N/A'} Day(s) | Course Manager: ${c.courses?.manager?.username || 'Unknown'} (${c.courses?.manager?.role || 'Unknown'})`} message={c.courses?.description || 'No description available'}>
-                          <SlottedSVGTemplate mdiIcon={mdiSchoolOutline} />
+                          <SlottedSVGTemplate mdiIcon={mdiBook} />
                         </IcCardVertical>);
                     } else if (c.assessmentID) {
                       const expiry = c.assessments?.expiry ? `${c.assessments.expiry}` : 'N/A'

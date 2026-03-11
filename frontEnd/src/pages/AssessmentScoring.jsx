@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcAlert, IcHero } from "@ukic/react";
-import { mdiCheckCircle, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
+import { mdiCheckDecagramOutline, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ITRHeader";
 import Footer from "../components/ITRFooter";
@@ -179,7 +179,7 @@ const AssessmentScoring = () => {
                   subheading={`Employee: ${item?.username || 'N/A'} | Max Score: ${item?.max_score || 0} | Passing: ${item?.passing_score || 0} | Recorded: ${safeRecordDate}`}
                   message={item?.description || 'No description available'}
                 >
-                  <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                  <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
                   <IcStatusTag 
                     slot="interaction-button" 
                     label={status?.status || 'Unknown'} 
@@ -251,7 +251,7 @@ const AssessmentScoring = () => {
                           onClick={() => handleStartEdit(item)}
                         >
                           Record Score
-                          <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                          <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
                         </IcButton>
                       )}
                     </div>

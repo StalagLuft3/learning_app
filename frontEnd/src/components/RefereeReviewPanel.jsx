@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcTab, IcTabContext, IcTabGroup, IcTabPanel, IcSelect, IcAlert, IcToggleButton } from "@ukic/react";
-import { mdiAccountCheck, mdiPuzzleOutline, mdiCheckCircle, mdiCommentQuoteOutline, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
+import { mdiAccountCheck, mdiPuzzleOutline, mdiCheckDecagramOutline, mdiCommentQuoteOutline, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
 import SlottedSVGTemplate from "./slottedSVGTemplate";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 import { fetchRefereeItems, updateItemStatus } from "../commonFunctions/commonFeedbackUtilities";
@@ -347,7 +347,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
                   subheading={`Employee: ${item?.username || 'N/A'} | Max Score: ${item?.max_score || 0} | Passing: ${item?.passing_score || 0} | Recorded: ${safeRecordDate}`}
                   message={item?.description || 'No description available'}
                 >
-                  <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                  <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
                   <IcStatusTag 
                     slot="interaction-button" 
                     label={status?.status || 'Unknown'} 
@@ -419,7 +419,7 @@ const RefereeReviewPanel = ({ currentUser, itemType }) => {
                           onClick={() => handleStartEdit(item, 'assessment')}
                         >
                           Record Score
-                          <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+                          <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
                         </IcButton>
                       )}
                     </div>

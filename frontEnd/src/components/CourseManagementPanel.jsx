@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert } from "@ukic/react";
-import { mdiAccountCheck, mdiSchool, mdiAccountRemove } from "@mdi/js";
+import { mdiAccountCheck, mdiBookOutline, mdiAccountRemove } from "@mdi/js";
 import SlottedSVGTemplate from "./slottedSVGTemplate";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 import { fetchData } from "../commonFunctions/api";
@@ -172,7 +172,7 @@ const CourseManagementPanel = ({ currentUser }) => {
                     subheading={`Role: ${enrollment.role || 'N/A'} | Enrolled: ${enrollment.recordDate || 'N/A'} | Duration: ${course.duration} days`}
                     message={course.description || 'No description available'}
                   >
-                    <SlottedSVGTemplate mdiIcon={mdiSchool} />
+                    <SlottedSVGTemplate mdiIcon={mdiBookOutline} />
                     <IcStatusTag 
                       slot="interaction-button" 
                       label={status?.status || 'Unknown'} 

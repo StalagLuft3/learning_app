@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog } from "@ukic/react";
-import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiSchool, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiNotebookPlusOutline, mdiNotebookOutline, mdiDelete } from "@mdi/js";
+import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiBookOutline, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiDelete } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ContentManagementHeader";
 import Footer from "../components/ITRFooter";
@@ -493,7 +493,7 @@ const CourseManagement = () => {
               setCreateDialogOpen(true);
             }}
           >
-            <SlottedSVGTemplate mdiIcon={mdiNotebookPlusOutline} />
+            <SlottedSVGTemplate mdiIcon={mdiBookOutline} />
             Create Course
           </IcButton>
         </IcHero>
@@ -526,7 +526,7 @@ const CourseManagement = () => {
             setCreateDialogOpen(true);
           }}
         >
-          <SlottedSVGTemplate mdiIcon={mdiNotebookPlusOutline} />
+          <SlottedSVGTemplate mdiIcon={mdiBookOutline} />
           Create Course
         </IcButton>
         {managedCourses.length > 0 && activeTab && (
@@ -549,7 +549,7 @@ const CourseManagement = () => {
               }
             }}
           >
-            <SlottedSVGTemplate mdiIcon={mdiNotebookOutline} />
+            <SlottedSVGTemplate mdiIcon={mdiBookOutline} />
             Edit Course Details
           </IcButton>
         )}
@@ -591,11 +591,12 @@ const CourseManagement = () => {
                   setActiveTab(course.courseID);
                 }}
               >
-                <SlottedSVGTemplate mdiIcon={mdiSchool} />
+                <SlottedSVGTemplate mdiIcon={mdiBookOutline} />
                 {course.courseName}
                 {awaitingCount > 0 && (
                   <IcBadge 
-                    textLabel={awaitingCount.toString()} 
+                    type="text"
+                    label={awaitingCount.toString()} 
                     variant="info" 
                     style={{ marginLeft: '8px' }}
                   />
@@ -987,7 +988,7 @@ const CourseManagement = () => {
               type="submit"
               disabled={!hasChanges}
             >
-              <SlottedSVGTemplate mdiIcon={mdiNotebookPlusOutline} />
+              <SlottedSVGTemplate mdiIcon={mdiBookOutline} />
               {hasChanges ? 'Create Course' : 'Fill Required Fields'}
             </IcButton>
           </div>

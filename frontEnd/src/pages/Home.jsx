@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { IcBadge, IcCardVertical, IcTypography } from "@ukic/react";
-import { mdiCommentQuote, mdiFileDocumentMultiple, mdiGraphOutline, mdiNotebook, mdiCheckCircle, mdiSignDirection, mdiAccountCheck, mdiPuzzle } from "@mdi/js";
-import { divContainer, cardContainer } from "../styles/containerLayout";
+import { IcBadge, IcCardVertical } from "@ukic/react";
+import { mdiPuzzleOutline, mdiFileAccount, mdiNavigationVariant, mdiNavigationVariantOutline, mdiBook, mdiCheckDecagram, mdiBookOutline, mdiCheckDecagramOutline } from "@mdi/js";
+import { cardContainer } from "../styles/containerLayout";
 
 import Header from "../components/HomeHeader";
 import Footer from "../components/ITRFooter";
@@ -17,6 +17,7 @@ function Home() {
   const [data, setData] = useState([]);
   const [refereeItems, setRefereeItems] = useState({ experiences: [], courseEnrollments: [], assessments: [] });
   const [userInfo, setUserInfo] = useState(null);
+  const [awaitingPathways, setAwaitingPathways] = useState(0);
 
   useEffect(() => {
     // Fetch feedback requests (experiences)
@@ -28,10 +29,29 @@ function Home() {
     fetchData("/Auth/user")
       .then((userData) => {
         setUserInfo(userData);
-        // Fetch referee items for this user
-        return fetchData(`/feedback/referee-items/${userData.employeeID}`);
+        if (!userData?.employeeID) {
+          return Promise.resolve([{ experiences: [], courseEnrollments: [], assessments: [] }, { pathways: [] }]);
+        }
+
+        // Fetch referee items and managed pathways for this user
+        return Promise.all([
+          fetchData(`/feedback/referee-items/${userData.employeeID}`),
+          fetchData(`/ManageContents/pathways/${userData.employeeID}`).catch(() => ({ pathways: [] }))
+        ]);
       })
-      .then((refereeData) => setRefereeItems(refereeData))
+      .then(([refereeData, managedPathwaysData]) => {
+        setRefereeItems(refereeData);
+
+        const pathways = Array.isArray(managedPathwaysData?.pathways) ? managedPathwaysData.pathways : [];
+        const totalInProgressAcrossManagedPathways = pathways.reduce((sum, pathway) => {
+          const inProgressCount = pathway.enrollments?.filter(
+            (enrollment) => (enrollment.currentStatus || 'In Progress') === 'In Progress'
+          ).length || 0;
+          return sum + inProgressCount;
+        }, 0);
+
+        setAwaitingPathways(totalInProgressAcrossManagedPathways);
+      })
       .catch(err => console.error(err));
   }, []);
 
@@ -56,83 +76,105 @@ function Home() {
       title: "Your Record",
       description: "View your personal training record with courses, assessments, and experiences",
       path: "/Record",
-      icon: mdiFileDocumentMultiple
+      icon: mdiFileAccount
     },
     {
       title: "Pathways", 
       description: "Explore structured learning pathways and track your progress",
       path: "/Pathways",
-      icon: mdiSignDirection
+      icon: mdiNavigationVariant
     },
     {
       title: "Individual Courses",
       description: "Browse and enroll in individual courses from the catalogue", 
       path: "/Courses",
-      icon: mdiNotebook
+      icon: mdiBook
     },
     {
       title: "Individual Assessments",
       description: "View and complete assessments to validate your knowledge",
       path: "/Assessments", 
-      icon: mdiCheckCircle
+      icon: mdiCheckDecagram
     },
     {
       title: "Course Management",
       description: "Manage course content, enrollments and review student progress",
       path: "/CourseManagement",
-      icon: mdiAccountCheck,
+      icon: mdiBookOutline,
       badge: awaitingCourses
     },
     {
       title: "Assessment Management", 
       description: "Create and score assessments, review student submissions",
       path: "/AssessmentManagement",
-      icon: mdiPuzzle,
+      icon: mdiCheckDecagramOutline,
       badge: awaitingAssessments
     },
     {
       title: "Pathway Management",
       description: "Design learning pathways and manage student progress through structured programs", 
       path: "/PathwayManagement",
-      icon: mdiGraphOutline
+      icon: mdiNavigationVariantOutline,
+      badge: awaitingPathways
     },
     {
       title: "Feedback Management",
       description: "Provide feedback on experiences and manage referee requests",
       path: "/ExperienceFeedback",
-      icon: mdiCommentQuote,
+      icon: mdiPuzzleOutline,
       badge: awaitingFeedback
     }
   ];
+
+  const cardsByPath = homeCards.reduce((acc, card) => {
+    acc[card.path] = card;
+    return acc;
+  }, {});
+
+  const renderHomeCard = (card) => (
+    <IcCardVertical
+      style={cardContainer}
+      heading={card.title}
+      subheading={card.description}
+      clickable="true"
+      onClick={() => handleCardClick(card.path)}
+    >
+      <SlottedSVGTemplate mdiIcon={card.icon} />
+      {card.badge && card.badge > 0 && (
+        <IcBadge
+          size="large"
+          type="text"
+          label={card.badge.toString()}
+          slot="badge"
+          variant="info"
+        />
+      )}
+    </IcCardVertical>
+  );
 
   return (
     <>
       <Header />
 
-      {homeCards.map((card, index) => (
-        <div key={index} style={divContainer}>
-          <div>
-            <IcCardVertical 
-              style={cardContainer} 
-              heading={card.title} 
-              subheading={card.description}
-              clickable="true"
-              onClick={() => handleCardClick(card.path)}
-            >
-              <SlottedSVGTemplate mdiIcon={card.icon} />
-              {card.badge && card.badge > 0 && (
-                <IcBadge 
-                  size="large" 
-                  textLabel={card.badge} 
-                  slot="badge" 
-                  variant="info" 
-                />
-              )}
-            </IcCardVertical>
+      <div className="home-card-grid-wrapper">
+        <div className="home-card-grid">
+          <div className="home-card-full-width">
+            {renderHomeCard(cardsByPath["/Record"])}
           </div>
-          <div></div>
+
+          <div>{renderHomeCard(cardsByPath["/Pathways"])}</div>
+          <div>{renderHomeCard(cardsByPath["/PathwayManagement"])}</div>
+
+          <div>{renderHomeCard(cardsByPath["/Courses"])}</div>
+          <div>{renderHomeCard(cardsByPath["/CourseManagement"])}</div>
+
+          <div>{renderHomeCard(cardsByPath["/Assessments"])}</div>
+          <div>{renderHomeCard(cardsByPath["/AssessmentManagement"])}</div>
+
+          <div className="home-card-empty" aria-hidden="true"></div>
+          <div>{renderHomeCard(cardsByPath["/ExperienceFeedback"])}</div>
         </div>
-      ))}
+      </div>
 
       <Footer />
     </>

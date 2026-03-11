@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcDialog, IcHero, IcStatusTag, IcTextField, IcTypography, IcAlert } from "@ukic/react";
-import { mdiCommentQuoteOutline, mdiPuzzleOutline, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
+import { mdiPuzzleOutline, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ContentManagementHeader";
 import Footer from "../components/ITRFooter";
@@ -168,7 +168,7 @@ function ExperienceFeedback() {
                                                 <IcStatusTag slot="interaction-button" label="Awaiting your feedback" status="warning" />
                                                 <div slot="interaction-controls" style={{ display: "flex", gap: "16px" }}>
                                                     <IcButton onClick={() => handleButtonClick(i)} variant="primary">Draft Feedback
-                                                        <SlottedSVGTemplate mdiIcon={mdiCommentQuoteOutline} />
+                                                        <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
                                                     </IcButton>
                                                 </div>
                                             </>
