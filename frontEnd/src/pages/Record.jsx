@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcChip, IcDialog, IcHero, IcPageHeader, IcRadioGroup, IcRadioOption, IcSelect, IcStatusTag, IcTextField, IcTypography, IcAlert } from "@ukic/react";
-import { mdiCommentQuoteOutline, mdiCommentQuote, mdiNotebook, mdiCheckCircle, mdiSignDirection, mdiPuzzle, mdiPuzzlePlusOutline, mdiCalendarRange } from "@mdi/js";
+import { mdiCommentQuoteOutline, mdiCommentQuote, mdiNotebook, mdiCheckCircle, mdiSignDirection, mdiPuzzle, mdiPuzzlePlusOutline, mdiCalendarRange, mdiDownload } from "@mdi/js";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 
 import Header from "../components/ITRHeader";
@@ -246,6 +246,112 @@ function Record() {
     
     return { startDate, endDate };
   };
+
+  const handleExportRecord = (exportType = 'all') => {
+    const currentDate = new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString();
+    
+    // Filter data based on export type
+    let exportDataset = dataSubset;
+    if (exportType === 'completed') {
+      exportDataset = dataSubset.filter(item => {
+        const statusInfo = getStatusDisplay(item);
+        const safeStatus = getStandardizedStatusLabel(statusInfo?.status)?.toLowerCase();
+        return safeStatus === 'completed' || safeStatus === 'complete';
+      });
+    }
+    
+    // CSV Header for data
+    let csvData = 'Date Completed/Enrolled,Type,Content Name,Description,Your Feedback,Referee Feedback,Duration (Days),Content Manager/Referee\n';
+    
+    // Add the actual data
+    exportDataset.forEach((item) => {
+      const recordDate = formatDate(item.recordDate);
+      
+      if (item.courseID) {
+        const statusInfo = getStatusDisplay(item);
+        const safeStatus = getStandardizedStatusLabel(statusInfo?.status) || 'Unknown';
+        const completedDate = safeStatus.toLowerCase().includes('complete') ? recordDate : recordDate;
+        const courseDesc = item.courseDescription || item.description || '';
+        
+        csvData += `"${completedDate}","Course","${item.courseName}","${courseDesc.replace(/"/g, '""')}","","","${item.duration}","${item.username} (${item.role})"\n`;
+        
+      } else if (item.assessmentID) {
+        const statusInfo = getStatusDisplay(item);
+        const safeStatus = getStandardizedStatusLabel(statusInfo?.status) || 'Unknown';
+        const completedDate = safeStatus.toLowerCase().includes('complete') ? recordDate : recordDate;
+        const scoreInfo = item.scoreAchieved ? `Score: ${item.scoreAchieved}/${item.max_score}` : '';
+        
+        csvData += `"${completedDate}","Assessment","${item.name}","${(item.description || '').replace(/"/g, '""')}","${scoreInfo}","","${item.duration}","${item.username} (${item.role})"\n`;
+        
+      } else if (item.employee_experienceID) {
+        const statusInfo = getStatusDisplay(item);
+        const safeStatus = getStandardizedStatusLabel(statusInfo?.status) || 'Unknown';
+        const completedDate = safeStatus.toLowerCase().includes('complete') ? recordDate : recordDate;
+        const yourFeedback = item.employeeText || '';
+        const refereeFeedback = item.refereeText || '';
+        const referee = item.refereeUsername ? `${item.refereeUsername}` : 'No referee assigned';
+        
+        csvData += `"${completedDate}","Experience","","${(item.experienceDescription || '').replace(/"/g, '""')}","${yourFeedback.replace(/"/g, '""')}","${refereeFeedback.replace(/"/g, '""')}","${item.duration}","${referee}"\n`;
+      }
+    });
+    
+    // Add blank separator row
+    csvData += `\n`;
+    
+    // Calculate summary statistics
+    const totalDuration = exportDataset.reduce((sum, item) => sum + (parseFloat(item.duration) || 0), 0);
+    const dates = exportDataset.map(item => new Date(item.recordDate)).filter(date => !isNaN(date));
+    const earliestDate = dates.length > 0 ? new Date(Math.min(...dates)).toLocaleDateString() : 'No records';
+    const latestDate = dates.length > 0 ? new Date(Math.max(...dates)).toLocaleDateString() : 'No records';
+    const dateRangeCovered = dates.length > 0 ? `${earliestDate} to ${latestDate}` : 'No date range';
+    
+    // Add summary information at the bottom
+    csvData += `"EXPORT SUMMARY","","","","","","",""\\n`;
+    csvData += `"Generated on","${currentDate} at ${currentTime}","","","","","",""\\n`;
+    csvData += `"User","${userInfo?.username || 'Unknown'}","","","","","",""\\n`;
+    csvData += `"Export Type","${exportType === 'completed' ? 'Completed Items Only' : 'All Items'}","","","","","",""\\n`;
+    csvData += `"Date Range Covered","${dateRangeCovered}","","","","","",""\\n`;
+    csvData += `"Total Duration","${totalDuration} days","","","","","",""\\n`;
+    
+    // Add filter information
+    if (banner) {
+      csvData += `"Current Pathway","${banner.pathwayName}","${banner.pathwayDescription}","","","","",""\\n`;
+      csvData += `"Pathway Filter","Applied - showing pathway records only","","","","","",""\\n`;
+    } else {
+      csvData += `"Current Pathway","No pathway selected","","","","","",""\\n`;
+    }
+    if (dateRangeChip) {
+      csvData += `"Date Range Filter","${dateRangeChip.startDate} to ${dateRangeChip.endDate}","","","","","",""\\n`;
+    } else {
+      csvData += `"Date Range Filter","No date filter applied","","","","","",""\\n`;
+    }
+    
+    csvData += `"Total Records Exported","${exportDataset.length}","","","","","",""\\n`;
+    
+    // Create and download CSV file
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Generate filename with filters
+    let filename = `learning_record_${userInfo?.username || 'user'}_${exportType}_${currentDate.replace(/\//g, '-')}`;
+    if (banner) {
+      filename += `_${banner.pathwayName.replace(/\s+/g, '_')}`;
+    }
+    if (dateRangeChip) {
+      filename += `_${dateRangeChip.startDate.replace(/\//g, '-')}_to_${dateRangeChip.endDate.replace(/\//g, '-')}`;
+    }
+    link.download = `${filename}.csv`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    
+    closeDialog("exportOptions");
+  };
   
   let selectedPathwayList = getSelectedPathwayList(fullRecord, myPathwayDetails, selectedPathwayID); 
   let enrolledPathwaysList = getEnrolledPathwaysList(enrolledPathways).map(
@@ -281,6 +387,10 @@ function Record() {
         }} slot="interaction" variant="secondary">
           Set Date Range
           <SlottedSVGTemplate mdiIcon={mdiCalendarRange} />
+        </IcButton>
+        <IcButton onClick={() => openDialog("exportOptions")} slot="interaction" variant="secondary">
+          Export Record
+          <SlottedSVGTemplate mdiIcon={mdiDownload} />
         </IcButton>
         <IcButton onClick={() => openDialog('recordExperience')} slot="interaction" variant="primary">
           Record Experience
@@ -559,6 +669,33 @@ function Record() {
         onIcChange={(e) => handleTempDateChange('endDate', e.detail.value)}
         required 
       />
+    </IcDialog>
+
+    <IcDialog
+      size="large"
+      open={isDialogOpen("exportOptions")}
+      closeOnBackdropClick={true}
+      heading="Export Options"
+      disable-height-constraint="true"
+      onIcDialogClosed={() => closeDialog("exportOptions")}
+    >
+      <IcTypography style={{ marginBottom: '16px' }}>Choose what to include in your export:</IcTypography>
+      <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
+        <IcButton 
+          variant="primary" 
+          onClick={() => handleExportRecord('completed')}
+        >
+          Export Completed Only
+          <SlottedSVGTemplate mdiIcon={mdiCheckCircle} />
+        </IcButton>
+        <IcButton 
+          variant="secondary" 
+          onClick={() => handleExportRecord('all')}
+        >
+          Export All Records
+          <SlottedSVGTemplate mdiIcon={mdiDownload} />
+        </IcButton>
+      </div>
     </IcDialog>
     </>
   )
