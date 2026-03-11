@@ -713,6 +713,35 @@ router.post('/pathways/:pathwayId/add-experience-template', async function(req, 
   }
 });
 
+// POST /pathways/:pathwayId/create-experience - Create experience template for pathway
+router.post('/pathways/:pathwayId/create-experience', async function(req, res) {
+  try {
+    const pathwayId = req.params.pathwayId;
+    const { experienceDescription, minimumDuration } = req.body;
+    const token = req.cookies["x-auth-token"];
+
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (!experienceDescription || experienceDescription.trim() === '') {
+      return res.status(400).json({ error: 'Experience description is required' });
+    }
+
+    const templateData = {
+      experienceDescription: experienceDescription.trim(),
+      minimumDuration: minimumDuration || 0
+    };
+
+    const result = await managePathways.createExperienceTemplateForPathway(pathwayId, templateData, token);
+    res.json(result);
+    
+  } catch (error) {
+    console.error('Error creating experience template for pathway:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /pathways/:pathwayId/remove-experience-template/:templateId - Remove experience template from pathway
 router.delete('/pathways/:pathwayId/remove-experience-template/:templateId', async function(req, res) {
   try {

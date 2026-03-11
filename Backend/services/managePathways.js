@@ -862,6 +862,46 @@ async function createExperienceTemplate(templateData, token) {
   }
 }
 
+// CREATE EXPERIENCE TEMPLATE FOR PATHWAY
+async function createExperienceTemplateForPathway(pathwayId, templateData, token) {
+  try {
+    const employeeEmail = jwtDecode(token).email;
+    
+    const employee = await prisma.employees.findFirst({
+      where: { email: employeeEmail }
+    });
+    
+    if (!employee) {
+      throw new Error('Employee not found');
+    }
+
+    // First create the experience template
+    const newTemplate = await prisma.experience_templates.create({
+      data: {
+        experienceDescription: templateData.experienceDescription,
+        minimumDuration: parseFloat(templateData.minimumDuration) || 0
+      }
+    });
+
+    // Then add it to the pathway
+    const pathwayTemplate = await prisma.pathways_experience_templates.create({
+      data: {
+        pathwayID: parseInt(pathwayId),
+        experience_templateID: newTemplate.experience_templateID
+      }
+    });
+
+    return {
+      message: 'Experience template created and added to pathway successfully',
+      template: newTemplate,
+      pathwayAssociation: pathwayTemplate
+    };
+  } catch (error) {
+    console.error('Error in createExperienceTemplateForPathway:', error);
+    throw new Error('Failed to create experience template for pathway: ' + error.message);
+  }
+}
+
 // UPDATE EXPERIENCE TEMPLATE
 async function updateExperienceTemplate(templateID, updateData, token) {
   try {
@@ -947,6 +987,7 @@ module.exports = {
   copyPathwayContents,
   getAllExperienceTemplates,
   createExperienceTemplate,
+  createExperienceTemplateForPathway,
   updateExperienceTemplate,
   deleteExperienceTemplate
 };

@@ -151,7 +151,7 @@ function ExperienceFeedback() {
                     return (
                         <div key={i} style={divContainer}>
                             <div>
-                                <IcCardVertical style={cardContainer} heading={d.experienceDescription} subheading={"Start date of Experience [ " + d.recordDate + " ] | Duration (hours) [ " + d.duration + " ]"}>
+                                <IcCardVertical style={cardContainer} heading={d.experienceDescription} subheading={"Start date of Experience [ " + d.recordDate + " ] | Duration (days) [ " + d.duration + " ]"}>
                                     <>
                                         <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
                                         <IcTypography slot="adornment" variant="label-uppercase">{`${d.username}'s feedback on their experience`}</IcTypography>

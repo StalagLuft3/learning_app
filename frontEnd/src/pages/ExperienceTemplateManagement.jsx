@@ -307,7 +307,7 @@ const ExperienceTemplateManagement = () => {
                 key={template.experience_templateID}
                 style={cardContainer}
                 heading={`Experience Template #${template.experience_templateID}`}
-                subheading={`Minimum Duration: ${template.minimumDuration} hours`}
+                subheading={`Minimum Duration: ${template.minimumDuration} days`}
                 message={template.experienceDescription}
               >
                 <SlottedSVGTemplate mdiIcon={mdiClipboardText} />
@@ -367,12 +367,12 @@ const ExperienceTemplateManagement = () => {
           <IcTextField 
             value={formData.minimumDuration} 
             onIcInput={(e) => handleFormChange('minimumDuration', e.detail.value)}
-            label="Minimum Duration (hours)" 
+            label="Minimum Duration (days)" 
             type="number"
-            step="0.5"
+            step="0.125"
             min="0"
             fullWidth="full-width" 
-            helperText="Recommended minimum time to complete this experience"
+            helperText="Recommended minimum time to complete this experience (increments of 0.125 = 1 hour)"
           />
           
           <br />
@@ -422,12 +422,12 @@ const ExperienceTemplateManagement = () => {
           <IcTextField 
             value={formData.minimumDuration} 
             onIcInput={(e) => handleFormChange('minimumDuration', e.detail.value)}
-            label="Minimum Duration (hours)" 
+            label="Minimum Duration (days)" 
             type="number"
-            step="0.5"
+            step="0.125"
             min="0"
             fullWidth="full-width" 
-            helperText="Recommended minimum time to complete this experience"
+            helperText="Recommended minimum time to complete this experience (increments of 0.125 = 1 hour)"
           />
           
           <br />

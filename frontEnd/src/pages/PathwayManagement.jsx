@@ -27,13 +27,21 @@ const PathwayManagement = () => {
 
   // Content management states
   const [contentDialogOpen, setContentDialogOpen] = useState(false);
-  const [contentDialogType, setContentDialogType] = useState(''); // 'courses', 'assessments', 'templates', 'pathways'
+  const [contentDialogType, setContentDialogType] = useState(''); // 'courses', 'assessments', 'pathways'
   const [availableContent, setAvailableContent] = useState([]);
   const [filteredContent, setFilteredContent] = useState([]);
   const [selectedContent, setSelectedContent] = useState([]);
   const [loadingContent, setLoadingContent] = useState(false);
   const [currentPathwayForContent, setCurrentPathwayForContent] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Experience creation states
+  const [createExperienceDialogOpen, setCreateExperienceDialogOpen] = useState(false);
+  const [experienceFormData, setExperienceFormData] = useState({
+    experienceDescription: '',
+    minimumDuration: ''
+  });
+  const [currentPathwayForExperience, setCurrentPathwayForExperience] = useState(null);
 
   // Dialog states for editing
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -410,9 +418,7 @@ const PathwayManagement = () => {
         case 'assessments':
           endpoint = `http://localhost:5000/ManageContents/pathways/${pathwayId}/available-assessments`;
           break;
-        case 'templates':
-          endpoint = `http://localhost:5000/ManageContents/pathways/${pathwayId}/available-experience-templates`;
-          break;
+
         case 'pathways':
           endpoint = `http://localhost:5000/ManageContents/pathways/${pathwayId}/available-pathways`;
           break;
@@ -442,10 +448,6 @@ const PathwayManagement = () => {
           case 'assessments':
             content = data.assessments || [];
             console.log(`Extracted assessments: ${content.length} items`);
-            break;
-          case 'templates':
-            content = data.experienceTemplates || [];
-            console.log(`Extracted templates: ${content.length} items`);
             break;
           case 'pathways':
             content = data.pathways || [];
@@ -490,10 +492,6 @@ const PathwayManagement = () => {
         case 'assessments':
           endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/add-assessment`;
           body = { assessmentId: contentId };
-          break;
-        case 'templates':
-          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/add-experience-template`;
-          body = { templateId: contentId };
           break;
         default:
           throw new Error('Unknown content type for adding');
@@ -548,9 +546,7 @@ const PathwayManagement = () => {
         case 'assessments':
           endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/remove-assessment/${contentId}`;
           break;
-        case 'templates':
-          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/remove-experience-template/${contentId}`;
-          break;
+
         default:
           throw new Error('Unknown content type for removal');
       }
@@ -586,7 +582,7 @@ const PathwayManagement = () => {
     }
   };
 
-  const copyPathwayContents = async (sourcePathwayId) => {
+  const addPathwayContent = async (sourcePathwayId) => {
     try {
       setSubmitting(true);
       
@@ -600,7 +596,7 @@ const PathwayManagement = () => {
       const result = await response.json();
       
       if (response.ok) {
-        setAlertMessage(result.message || 'Pathway contents copied successfully!');
+        setAlertMessage(result.message || 'Pathway content added successfully!');
         setAlertType('success');
         setAlertVisible(true);
         setTimeout(() => setAlertVisible(false), 5000);
@@ -610,12 +606,12 @@ const PathwayManagement = () => {
         await loadManagedPathways();
         
       } else {
-        throw new Error(result.error || 'Failed to copy pathway contents');
+        throw new Error(result.error || 'Failed to add pathway content');
       }
       
     } catch (error) {
-      console.error('Failed to copy pathway contents:', error);
-      setAlertMessage(`Failed to copy pathway contents: ${error.message}`);
+      console.error('Failed to add pathway content:', error);
+      setAlertMessage(`Failed to add pathway content: ${error.message}`);
       setAlertType('warning');
       setAlertVisible(true);
       setTimeout(() => setAlertVisible(false), 3000);
@@ -632,6 +628,90 @@ const PathwayManagement = () => {
     setSelectedContent([]);
     setCurrentPathwayForContent(null);
     setSearchTerm('');
+  };
+
+  // Experience creation functions
+  const openCreateExperienceDialog = (pathwayId) => {
+    setCurrentPathwayForExperience(pathwayId);
+    setExperienceFormData({
+      experienceDescription: '',
+      minimumDuration: ''
+    });
+    setCreateExperienceDialogOpen(true);
+  };
+
+  const closeCreateExperienceDialog = () => {
+    setCreateExperienceDialogOpen(false);
+    setExperienceFormData({
+      experienceDescription: '',
+      minimumDuration: ''
+    });
+    setCurrentPathwayForExperience(null);
+  };
+
+  const handleExperienceFormChange = (fieldName, value) => {
+    setExperienceFormData(prev => ({
+      ...prev,
+      [fieldName]: value
+    }));
+  };
+
+  const handleCreateExperience = async () => {
+    if (!experienceFormData.experienceDescription.trim()) {
+      setAlertMessage('Please provide an experience description');
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 3000);
+      return;
+    }
+
+    if (experienceFormData.experienceDescription.trim().length < 16) {
+      setAlertMessage('Experience description must be at least 16 characters long');
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 3000);
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      const response = await fetch(`http://localhost:5000/ManageContents/pathways/${currentPathwayForExperience}/create-experience`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          experienceDescription: experienceFormData.experienceDescription,
+          minimumDuration: experienceFormData.minimumDuration || 0
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok) {
+        setAlertMessage('Experience template added successfully!');
+        setAlertType('success');
+        setAlertVisible(true);
+        setTimeout(() => setAlertVisible(false), 3000);
+        
+        closeCreateExperienceDialog();
+        await loadManagedPathways();
+        
+      } else {
+        throw new Error(result.error || 'Failed to add experience template');
+      }
+      
+    } catch (error) {
+      console.error('Failed to add experience template:', error);
+      setAlertMessage(`Failed to add experience template: ${error.message}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 5000);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSearchChange = (event) => {
@@ -673,7 +753,7 @@ const PathwayManagement = () => {
         case 'courses':
           baseData = {
             name: item.courseName || 'Untitled Course',
-            duration: `${item.duration || 0} hours`,
+            duration: `${item.duration || 0} days`,
             deliveryMethod: item.delivery_method || 'Not specified',
             deliveryLocation: item.delivery_location || 'Not specified',
             description: item.description || 'No description'
@@ -683,22 +763,12 @@ const PathwayManagement = () => {
         case 'assessments':
           baseData = {
             name: item.name || 'Untitled Assessment',
-            duration: `${item.duration || 0} hours`,
+            duration: `${item.duration || 0} days`,
             deliveryMethod: item.delivery_method || 'Not specified',
             deliveryLocation: item.delivery_location || 'Not specified',
             description: item.description || 'No description'
           };
           itemId = item.assessmentID;
-          break;
-        case 'templates':
-          baseData = {
-            name: item.experienceDescription?.substring(0, 50) + '...' || 'Untitled Experience',
-            duration: `${item.minimumDuration || 0} hours minimum`,
-            deliveryMethod: 'On-the-job',
-            deliveryLocation: 'Workplace',
-            description: item.experienceDescription || 'No description'
-          };
-          itemId = item.experience_templateID;
           break;
         default:
           baseData = {
@@ -732,8 +802,7 @@ const PathwayManagement = () => {
   const getContentDisplayName = (contentType) => {
     const names = {
       courses: 'Courses',
-      assessments: 'Assessments', 
-      templates: 'Experience Templates',
+      assessments: 'Assessments',
       pathways: 'Other Pathways'
     };
     return names[contentType] || contentType;
@@ -897,33 +966,27 @@ const PathwayManagement = () => {
                     </IcButton>
                     <IcButton 
                       variant="primary"
-                      onClick={() => {
-                        setCurrentPathwayForContent(pathway.pathwayID);
-                        openContentDialog(pathway.pathwayID, 'templates');
-                      }}
+                      onClick={() => openCreateExperienceDialog(pathway.pathwayID)}
                     >
                       <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
-                      Add Experience Templates
+                      Add Experience Template
                     </IcButton>
-                  </div>
-                  <div slot="interaction-controls" style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}>
                     <IcButton 
-                      variant="tertiary"
+                      variant="primary"
                       onClick={() => {
                         setCurrentPathwayForContent(pathway.pathwayID);
                         openContentDialog(pathway.pathwayID, 'pathways');
                       }}
                     >
                       <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
-                      Copy Content from Another Pathway
+                      Add Pathway
                     </IcButton>
                   </div>
                 </IcCardVertical>
 
                 {/* Pathway Contents Section */}
                 {((pathway.courses && pathway.courses.length > 0) || 
-                  (pathway.assessments && pathway.assessments.length > 0) || 
-                  (pathway.experienceTemplates && pathway.experienceTemplates.length > 0)) && (
+                  (pathway.assessments && pathway.assessments.length > 0)) && (
                   <IcAccordion heading="Pathway Contents" style={{ marginBottom: '16px' }}>
                     {/* Courses */}
                     {pathway.courses && pathway.courses.length > 0 && (
@@ -1000,41 +1063,6 @@ const PathwayManagement = () => {
                       </>
                     )}
 
-                    {/* Experience Templates */}
-                    {pathway.experienceTemplates && pathway.experienceTemplates.length > 0 && (
-                      <>
-                        {pathway.experienceTemplates.map((template, idx) => (
-                          <div key={`template-${idx}`} style={{ ...divContainer, marginBottom: '16px' }}>
-                            <div>
-                              <IcCardVertical 
-                                fullWidth="true" 
-                                style={cardContainer} 
-                                heading={template.experienceDescription || 'Untitled Experience'} 
-                                subheading={`${template.minimumDuration || 'N/A'} hours minimum duration | Workplace Experience`}
-                                message={template.experienceDescription || 'No description available'}
-                              >
-                                <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
-                                <IcStatusTag label="Experience Template" status="warning" slot="interaction-button" />
-                                <div slot="interaction-controls" style={{ display: "flex", gap: "8px" }}>
-                                  <IcButton 
-                                    size="small" 
-                                    variant="destructive"
-                                    onClick={() => {
-                                      setCurrentPathwayForContent(pathway.pathwayID);
-                                      removeContentFromPathway(template.experience_templateID, 'templates');
-                                    }}
-                                    disabled={submitting}
-                                  >
-                                    <SlottedSVGTemplate mdiIcon={mdiDelete} />
-                                    Remove
-                                  </IcButton>
-                                </div>
-                              </IcCardVertical>
-                            </div>
-                          </div>
-                        ))}
-                      </>
-                    )}
                   </IcAccordion>
                 )}
 
@@ -1218,7 +1246,7 @@ const PathwayManagement = () => {
         size="large"
         open={contentDialogOpen}
         heading={`Manage ${getContentDisplayName(contentDialogType)}`}
-        buttons="false"
+        hideDefaultControls={true}
         onIcDialogClosed={closeContentDialog}>
         <div>
           {loadingContent ? (
@@ -1226,15 +1254,16 @@ const PathwayManagement = () => {
           ) : (
             <>
               {contentDialogType === 'pathways' ? (
-                // Special handling for copying from other pathways
+                // Special handling for adding pathways
                 <>
                   <IcTypography variant="body" style={{ marginBottom: '16px' }}>
-                    Select a pathway to copy all its content (courses, assessments, and experience templates) into the current pathway:
+                    Select a pathway to add its entire content (courses, assessments, and experience templates) to the current pathway. 
+                    This copies the content only - enrolling students on your pathway does not enroll them on the source pathway.
                   </IcTypography>
                   
                   {availableContent.length === 0 ? (
                     <IcTypography variant="body" style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
-                      No other pathways available for copying.
+                      No other pathways available to add.
                     </IcTypography>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
@@ -1244,17 +1273,17 @@ const PathwayManagement = () => {
                           style={cardContainer}
                           heading={pathway.pathwayName}
                           subheading={`Manager: ${pathway.managerName} (${pathway.managerRole})`}
-                          message={`Content: ${pathway.contentCount.courses} courses, ${pathway.contentCount.assessments} assessments, ${pathway.contentCount.experienceTemplates} experiences`}
+                          message={`Content: ${pathway.contentCount.courses} courses, ${pathway.contentCount.assessments} assessments, ${pathway.contentCount.experienceTemplates || 0} experience templates`}
                         >
                           <div slot="interaction-controls">
                             <IcButton 
                               variant="primary"
                               size="small"
-                              onClick={() => copyPathwayContents(pathway.pathwayID)}
+                              onClick={() => addPathwayContent(pathway.pathwayID)}
                               disabled={submitting}
                             >
                               <SlottedSVGTemplate mdiIcon={mdiSignDirection} />
-                              Copy All Content
+                              Add Pathway Content
                             </IcButton>
                           </div>
                         </IcCardVertical>
@@ -1303,7 +1332,7 @@ const PathwayManagement = () => {
                           fontWeight: 'bold',
                           fontSize: '14px'
                         }}>
-                          <div>{contentDialogType === 'templates' ? 'Experience' : 'Name'}</div>
+                          <div>Name</div>
                           <div>Duration</div>
                           <div>Delivery Method</div>
                           <div>Location</div>
@@ -1357,17 +1386,71 @@ const PathwayManagement = () => {
                   )}
                 </>
               )}
-              
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '24px' }}>
-                <IcButton 
-                  variant="tertiary" 
-                  onClick={closeContentDialog}
-                >
-                  Close
-                </IcButton>
-              </div>
             </>
           )}
+        </div>
+      </IcDialog>
+      
+      {/* Create Experience Dialog */}
+      <IcDialog
+        size="medium"
+        open={createExperienceDialogOpen}
+        heading="Add Experience Template"
+        hideDefaultControls={true}
+        onIcDialogClosed={closeCreateExperienceDialog}>
+        <div>
+          <IcTypography variant="body" style={{ marginBottom: '16px' }}>
+            Create a unique experience template for this pathway. This will be specific to this pathway only.
+          </IcTypography>
+          
+          <IcTypography variant="label" style={{ marginBottom: '16px', color: '#2c5aa0', fontWeight: '500' }}>
+            Recommend using STAR method (SITUATION, TASK, ACTION & RESULT)
+          </IcTypography>
+          
+          <IcTextField 
+            value={experienceFormData.experienceDescription} 
+            onIcInput={(e) => handleExperienceFormChange('experienceDescription', e.detail.value)}
+            label="Experience Description" 
+            rows={4}
+            minCharacters={16}
+            maxCharcters={500}
+            fullWidth="full-width" 
+            required 
+            placeholder="Describe the experience template here using STAR format (SITUATION, TASK, ACTION & RESULT)"
+            helperText="Describe the learning experience template, objectives, and key activities students will undertake (minimum 16 characters)"
+            style={{ marginBottom: '16px' }}
+          />
+          
+          <IcTextField 
+            value={experienceFormData.minimumDuration} 
+            onIcInput={(e) => handleExperienceFormChange('minimumDuration', e.detail.value)}
+            label="Minimum Duration (days)" 
+            type="number"
+            step="0.125"
+            min="0"
+            fullWidth="full-width" 
+            placeholder="0.000"
+            helperText="Recommended minimum time to complete this experience (in days, increments of 0.125 = 1 hour)"
+            style={{ marginBottom: '24px' }}
+          />
+          
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
+            <IcButton 
+              variant="tertiary" 
+              onClick={closeCreateExperienceDialog}
+              disabled={submitting}
+            >
+              Cancel
+            </IcButton>
+            <IcButton 
+              variant="primary" 
+              onClick={handleCreateExperience}
+              disabled={submitting || !experienceFormData.experienceDescription.trim() || experienceFormData.experienceDescription.trim().length < 16}
+            >
+              <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
+              Add Experience Template
+            </IcButton>
+          </div>
         </div>
       </IcDialog>
       
