@@ -519,10 +519,10 @@ router.get('/pathways/:pathwayId/available-courses', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await managePathways.getAvailableCourses(pathwayId, token);
-    console.log('Available courses found:', data.courses.length);
+    const courses = await managePathways.getAvailableCourses(pathwayId, token);
+    console.log('Available courses found:', courses.length);
     
-    res.json(data);
+    res.json({ courses });
   } catch (error) {
     console.error('Error fetching available courses:', error);
     res.status(500).json({ error: error.message });
@@ -542,10 +542,10 @@ router.get('/pathways/:pathwayId/available-assessments', async function(req, res
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await managePathways.getAvailableAssessments(pathwayId, token);
-    console.log('Available assessments found:', data.assessments.length);
+    const assessments = await managePathways.getAvailableAssessments(pathwayId, token);
+    console.log('Available assessments found:', assessments.length);
     
-    res.json(data);
+    res.json({ assessments });
   } catch (error) {
     console.error('Error fetching available assessments:', error);
     res.status(500).json({ error: error.message });
@@ -565,10 +565,10 @@ router.get('/pathways/:pathwayId/available-experience-templates', async function
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await managePathways.getAvailableExperienceTemplates(pathwayId, token);
-    console.log('Available experience templates found:', data.experienceTemplates.length);
+    const experienceTemplates = await managePathways.getAvailableExperienceTemplates(pathwayId, token);
+    console.log('Available experience templates found:', experienceTemplates.length);
     
-    res.json(data);
+    res.json({ experienceTemplates });
   } catch (error) {
     console.error('Error fetching available experience templates:', error);
     res.status(500).json({ error: error.message });
@@ -588,10 +588,10 @@ router.get('/pathways/:pathwayId/available-pathways', async function(req, res) {
       return res.status(401).json({ error: "Authentication required" });
     }
 
-    const data = await managePathways.getAvailablePathways(pathwayId, token);
-    console.log('Available pathways found:', data.pathways.length);
+    const pathways = await managePathways.getAvailablePathways(pathwayId, token);
+    console.log('Available pathways found:', pathways.length);
     
-    res.json(data);
+    res.json({ pathways });
   } catch (error) {
     console.error('Error fetching available pathways:', error);
     res.status(500).json({ error: error.message });
@@ -817,9 +817,13 @@ router.post('/pathways/:pathwayId/copy-from/:sourcePathwayId', async function(re
 
     const result = await managePathways.copyPathwayContents(pathwayId, sourcePathwayId, token);
     console.log('Pathway contents copied successfully:', result);
+
+    const copiedCourses = result?.copied?.courses || 0;
+    const copiedAssessments = result?.copied?.assessments || 0;
+    const copiedExperienceTemplates = result?.copied?.experienceTemplates || 0;
     
     res.json({ 
-      message: `Pathway contents copied successfully. ${result.copied.courses} courses, ${result.copied.assessments} assessments, and ${result.copied.experienceTemplates} experience templates were added.`,
+      message: `Pathway contents copied successfully. ${copiedCourses} courses, ${copiedAssessments} assessments, and ${copiedExperienceTemplates} experience templates were added.`,
       result 
     });
   } catch (error) {

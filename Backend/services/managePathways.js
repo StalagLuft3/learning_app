@@ -193,9 +193,7 @@ async function getManagedPathways(managerId) {
         enrollments: enrollmentsWithProgress,
         courses: pathway.pathways_courses.map(pc => pc.courses),
         assessments: pathway.pathways_assessments.map(pa => pa.assessments),
-        experienceTemplates: pathway.pathways_experience_templates.map(pt => pt.experience_templates),
-        totalEnrollments: enrollmentsWithProgress.length,
-        completedEnrollments: enrollmentsWithProgress.filter(e => e.currentStatus === 'Completed').length
+        experienceTemplates: pathway.pathways_experience_templates.map(pt => pt.experience_templates)
       };
     }));
 
@@ -490,6 +488,11 @@ async function getAvailableExperienceTemplates(pathwayID, token) {
 // GET AVAILABLE PATHWAYS FOR COPYING CONTENTS
 async function getAvailablePathways(currentPathwayID, token) {
   try {
+    const parsedCurrentPathwayID = parseInt(currentPathwayID);
+    if (Number.isNaN(parsedCurrentPathwayID)) {
+      throw new Error('Invalid pathway ID');
+    }
+
     const employeeEmail = jwtDecode(token).email;
     
     const employee = await prisma.employees.findFirst({
@@ -505,7 +508,7 @@ async function getAvailablePathways(currentPathwayID, token) {
     const availablePathways = await prisma.pathways.findMany({
       where: {
         pathwayID: {
-          not: currentPathwayID
+          not: parsedCurrentPathwayID
         }
       },
       include: {
@@ -538,6 +541,13 @@ async function getAvailablePathways(currentPathwayID, token) {
 // ADD COURSE TO PATHWAY
 async function addCourseToPathway(pathwayID, courseID, token) {
   try {
+    const parsedPathwayID = parseInt(pathwayID);
+    const parsedCourseID = parseInt(courseID);
+
+    if (Number.isNaN(parsedPathwayID) || Number.isNaN(parsedCourseID)) {
+      throw new Error('Invalid pathway or course ID');
+    }
+
     const employeeEmail = jwtDecode(token).email;
     
     const employee = await prisma.employees.findFirst({
@@ -552,7 +562,7 @@ async function addCourseToPathway(pathwayID, courseID, token) {
     // Check if pathway exists and user is manager
     const pathway = await prisma.pathways.findFirst({
       where: {
-        pathwayID: pathwayID,
+        pathwayID: parsedPathwayID,
         pathwayManagerID: employee.employeeID
       }
     });
@@ -564,8 +574,8 @@ async function addCourseToPathway(pathwayID, courseID, token) {
     // Check if course already exists in pathway
     const existingCoursePathway = await prisma.pathways_courses.findFirst({
       where: {
-        pathwayID: pathwayID,
-        courseID: courseID
+        pathwayID: parsedPathwayID,
+        courseID: parsedCourseID
       }
     });
 
@@ -576,10 +586,10 @@ async function addCourseToPathway(pathwayID, courseID, token) {
     // Check if students are already enrolled in this pathway for the course
     const existingCourseEnrollment = await prisma.employees_courses.findFirst({
       where: {
-        courseID: courseID,
+        courseID: parsedCourseID,
         employeeID: {
           in: await prisma.pathways_employees.findMany({
-            where: { pathwayID: pathwayID },
+            where: { pathwayID: parsedPathwayID },
             select: { employeeID: true }
           }).then(enrollments => enrollments.map(e => e.employeeID))
         }
@@ -589,14 +599,14 @@ async function addCourseToPathway(pathwayID, courseID, token) {
     if (!existingCourseEnrollment) {
       // Auto-enroll all pathway students in this course
       const pathwayStudents = await prisma.pathways_employees.findMany({
-        where: { pathwayID: pathwayID }
+        where: { pathwayID: parsedPathwayID }
       });
 
       for (const student of pathwayStudents) {
         await prisma.employees_courses.create({
           data: {
             employeeID: student.employeeID,
-            courseID: courseID,
+            courseID: parsedCourseID,
             currentStatus: 'In Progress',
             recordDate: new Date().toISOString().split('T')[0]
           }
@@ -607,8 +617,8 @@ async function addCourseToPathway(pathwayID, courseID, token) {
     // Add course to pathway
     const result = await prisma.pathways_courses.create({
       data: {
-        pathwayID: pathwayID,
-        courseID: courseID
+        pathwayID: parsedPathwayID,
+        courseID: parsedCourseID
       }
     });
 
@@ -644,6 +654,13 @@ async function removeCourseFromPathway(pathwayID, courseID, token) {
 // ADD ASSESSMENT TO PATHWAY
 async function addAssessmentToPathway(pathwayID, assessmentID, token) {
   try {
+    const parsedPathwayID = parseInt(pathwayID);
+    const parsedAssessmentID = parseInt(assessmentID);
+
+    if (Number.isNaN(parsedPathwayID) || Number.isNaN(parsedAssessmentID)) {
+      throw new Error('Invalid pathway or assessment ID');
+    }
+
     const employeeEmail = jwtDecode(token).email;
     
     const employee = await prisma.employees.findFirst({
@@ -658,7 +675,7 @@ async function addAssessmentToPathway(pathwayID, assessmentID, token) {
     // Check if pathway exists and user is manager
     const pathway = await prisma.pathways.findFirst({
       where: {
-        pathwayID: pathwayID,
+        pathwayID: parsedPathwayID,
         pathwayManagerID: employee.employeeID
       }
     });
@@ -670,8 +687,8 @@ async function addAssessmentToPathway(pathwayID, assessmentID, token) {
     // Check if assessment already exists in pathway
     const existingAssessmentPathway = await prisma.pathways_assessments.findFirst({
       where: {
-        pathwayID: pathwayID,
-        assessmentID: assessmentID
+        pathwayID: parsedPathwayID,
+        assessmentID: parsedAssessmentID
       }
     });
 
@@ -682,10 +699,10 @@ async function addAssessmentToPathway(pathwayID, assessmentID, token) {
     // Check if students are already enrolled in this pathway for the assessment
     const existingAssessmentEnrollment = await prisma.employees_assessments.findFirst({
       where: {
-        assessmentID: assessmentID,
+        assessmentID: parsedAssessmentID,
         employeeID: {
           in: await prisma.pathways_employees.findMany({
-            where: { pathwayID: pathwayID },
+            where: { pathwayID: parsedPathwayID },
             select: { employeeID: true }
           }).then(enrollments => enrollments.map(e => e.employeeID))
         }
@@ -695,14 +712,14 @@ async function addAssessmentToPathway(pathwayID, assessmentID, token) {
     if (!existingAssessmentEnrollment) {
       // Auto-enroll all pathway students in this assessment
       const pathwayStudents = await prisma.pathways_employees.findMany({
-        where: { pathwayID: pathwayID }
+        where: { pathwayID: parsedPathwayID }
       });
 
       for (const student of pathwayStudents) {
         await prisma.employees_assessments.create({
           data: {
             employeeID: student.employeeID,
-            assessmentID: assessmentID,
+            assessmentID: parsedAssessmentID,
             currentStatus: 'In Progress',
             recordDate: new Date().toISOString().split('T')[0]
           }
@@ -713,8 +730,8 @@ async function addAssessmentToPathway(pathwayID, assessmentID, token) {
     // Add assessment to pathway
     const result = await prisma.pathways_assessments.create({
       data: {
-        pathwayID: pathwayID,
-        assessmentID: assessmentID
+        pathwayID: parsedPathwayID,
+        assessmentID: parsedAssessmentID
       }
     });
 
@@ -750,6 +767,13 @@ async function removeAssessmentFromPathway(pathwayID, assessmentID, token) {
 // ADD EXPERIENCE TEMPLATE TO PATHWAY
 async function addExperienceTemplateToPathway(pathwayID, templateID, token) {
   try {
+    const parsedPathwayID = parseInt(pathwayID);
+    const parsedTemplateID = parseInt(templateID);
+
+    if (Number.isNaN(parsedPathwayID) || Number.isNaN(parsedTemplateID)) {
+      throw new Error('Invalid pathway or experience template ID');
+    }
+
     const employeeEmail = jwtDecode(token).email;
     
     const employee = await prisma.employees.findFirst({
@@ -764,7 +788,7 @@ async function addExperienceTemplateToPathway(pathwayID, templateID, token) {
     // Check if pathway exists and user is manager
     const pathway = await prisma.pathways.findFirst({
       where: {
-        pathwayID: pathwayID,
+        pathwayID: parsedPathwayID,
         pathwayManagerID: employee.employeeID
       }
     });
@@ -776,8 +800,8 @@ async function addExperienceTemplateToPathway(pathwayID, templateID, token) {
     // Check if template already exists in pathway
     const existingTemplatePathway = await prisma.pathways_experience_templates.findFirst({
       where: {
-        pathwayID: pathwayID,
-        experience_templateID: templateID
+        pathwayID: parsedPathwayID,
+        experience_templateID: parsedTemplateID
       }
     });
 
@@ -788,10 +812,10 @@ async function addExperienceTemplateToPathway(pathwayID, templateID, token) {
     // Check if students are already enrolled in this pathway for the experience template
     const existingExperienceEnrollment = await prisma.employees_experiences.findFirst({
       where: {
-        experience_templateID: templateID,
+        experience_templateID: parsedTemplateID,
         employeeID: {
           in: await prisma.pathways_employees.findMany({
-            where: { pathwayID: pathwayID },
+            where: { pathwayID: parsedPathwayID },
             select: { employeeID: true }
           }).then(enrollments => enrollments.map(e => e.employeeID))
         }
@@ -801,18 +825,18 @@ async function addExperienceTemplateToPathway(pathwayID, templateID, token) {
     if (!existingExperienceEnrollment) {
       // Auto-enroll all pathway students in this experience template
       const pathwayStudents = await prisma.pathways_employees.findMany({
-        where: { pathwayID: pathwayID }
+        where: { pathwayID: parsedPathwayID }
       });
 
       const experienceTemplate = await prisma.experience_templates.findUnique({
-        where: { experience_templateID: templateID }
+        where: { experience_templateID: parsedTemplateID }
       });
 
       for (const student of pathwayStudents) {
         await prisma.employees_experiences.create({
           data: {
             employeeID: student.employeeID,
-            experience_templateID: templateID,
+            experience_templateID: parsedTemplateID,
             experienceDescription: experienceTemplate.experienceDescription,
             duration: 0, // Will be updated when experience is completed
             recordDate: new Date().toISOString().split('T')[0]
@@ -824,8 +848,8 @@ async function addExperienceTemplateToPathway(pathwayID, templateID, token) {
     // Add experience template to pathway
     const result = await prisma.pathways_experience_templates.create({
       data: {
-        pathwayID: pathwayID,
-        experience_templateID: templateID
+        pathwayID: parsedPathwayID,
+        experience_templateID: parsedTemplateID
       }
     });
 
@@ -861,6 +885,13 @@ async function removeExperienceTemplateFromPathway(pathwayID, templateID, token)
 // COPY PATHWAY CONTENTS
 async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
   try {
+    const parsedTargetPathwayID = parseInt(targetPathwayID);
+    const parsedSourcePathwayID = parseInt(sourcePathwayID);
+
+    if (Number.isNaN(parsedTargetPathwayID) || Number.isNaN(parsedSourcePathwayID)) {
+      throw new Error('Invalid pathway ID');
+    }
+
     const employeeEmail = jwtDecode(token).email;
     
     const employee = await prisma.employees.findFirst({
@@ -875,7 +906,7 @@ async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
     // Check if target pathway exists and user is manager
     const targetPathway = await prisma.pathways.findFirst({
       where: {
-        pathwayID: targetPathwayID,
+        pathwayID: parsedTargetPathwayID,
         pathwayManagerID: employee.employeeID
       }
     });
@@ -886,27 +917,33 @@ async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
 
     // Get source pathway contents
     const sourceCourses = await prisma.pathways_courses.findMany({
-      where: { pathwayID: sourcePathwayID },
+      where: { pathwayID: parsedSourcePathwayID },
       select: { courseID: true }
     });
 
     const sourceAssessments = await prisma.pathways_assessments.findMany({
-      where: { pathwayID: sourcePathwayID },
+      where: { pathwayID: parsedSourcePathwayID },
       select: { assessmentID: true }
     });
 
     const sourceTemplates = await prisma.pathways_experience_templates.findMany({
-      where: { pathwayID: sourcePathwayID },
+      where: { pathwayID: parsedSourcePathwayID },
       select: { experience_templateID: true }
     });
 
     let addedItems = 0;
+    const copied = {
+      courses: 0,
+      assessments: 0,
+      experienceTemplates: 0
+    };
 
     // Copy courses
     for (const course of sourceCourses) {
       try {
-        await addCourseToPathway(targetPathwayID, course.courseID, token);
+        await addCourseToPathway(parsedTargetPathwayID, course.courseID, token);
         addedItems++;
+        copied.courses++;
       } catch (error) {
         // Skip if already exists
         if (!error.message.includes('already part of')) {
@@ -918,8 +955,9 @@ async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
     // Copy assessments
     for (const assessment of sourceAssessments) {
       try {
-        await addAssessmentToPathway(targetPathwayID, assessment.assessmentID, token);
+        await addAssessmentToPathway(parsedTargetPathwayID, assessment.assessmentID, token);
         addedItems++;
+        copied.assessments++;
       } catch (error) {
         // Skip if already exists
         if (!error.message.includes('already part of')) {
@@ -931,8 +969,9 @@ async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
     // Copy experience templates
     for (const template of sourceTemplates) {
       try {
-        await addExperienceTemplateToPathway(targetPathwayID, template.experience_templateID, token);
+        await addExperienceTemplateToPathway(parsedTargetPathwayID, template.experience_templateID, token);
         addedItems++;
+        copied.experienceTemplates++;
       } catch (error) {
         // Skip if already exists
         if (!error.message.includes('already part of')) {
@@ -944,6 +983,7 @@ async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
     return { 
       message: `Successfully copied ${addedItems} items to pathway`,
       copiedItems: addedItems,
+      copied,
       totalSourceItems: sourceCourses.length + sourceAssessments.length + sourceTemplates.length
     };
   } catch (error) {
