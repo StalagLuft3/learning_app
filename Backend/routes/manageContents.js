@@ -214,6 +214,38 @@ router.put("/updatePathway", async function(req, res) {
   }
 });
 
+// PUT /updatePathwayEnrollment - Pathway manager disenroll flow
+router.put('/updatePathwayEnrollment', async function(req, res) {
+  try {
+    const { enrollmentId, ...updateData } = req.body;
+    const token = req.cookies["x-auth-token"];
+
+    console.log('=== UPDATE PATHWAY ENROLLMENT REQUEST ===');
+    console.log('Enrollment ID:', enrollmentId);
+    console.log('Update data:', updateData);
+
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    if (!enrollmentId) {
+      return res.status(400).json({ error: "Enrollment ID is required" });
+    }
+
+    if (!updateData.newStatus) {
+      return res.status(400).json({ error: "New status is required" });
+    }
+
+    const result = await managePathways.updatePathwayEnrollment(enrollmentId, updateData, token);
+    console.log('Pathway enrollment updated successfully');
+
+    res.json({ message: 'Pathway enrollment updated successfully', result });
+  } catch (error) {
+    console.error('Error updating pathway enrollment:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // PUT /bulkUpdateCourseEnrollments - Bulk update course enrollments
 router.put('/bulkUpdateCourseEnrollments', async function(req, res) {
   try {

@@ -164,6 +164,19 @@ async function enrolCourse(enrolCourseID, token, enrolDate){
     });
     
     if (existingEnrollment) {
+      if (existingEnrollment.currentStatus === 'Expired') {
+        // Re-enroll by resetting the expired record to a fresh enrolled state.
+        const refreshedEnrollment = await prisma.employees_courses.update({
+          where: { employee_courseID: existingEnrollment.employee_courseID },
+          data: {
+            currentStatus: 'Enrolled',
+            recordDate: enrolDate,
+            completionDate: null,
+            score: null
+          }
+        });
+        return refreshedEnrollment;
+      }
       throw new Error('Already enrolled in this course');
     }
     
@@ -218,6 +231,19 @@ async function enrolAssessment(enrolAssessmentID, token, enrolDate){
     });
     
     if (existingEnrollment) {
+      if (existingEnrollment.currentStatus === 'Expired') {
+        // Re-enroll by resetting the expired record to a fresh enrolled state.
+        const refreshedEnrollment = await prisma.employees_assessments.update({
+          where: { employee_assessmentID: existingEnrollment.employee_assessmentID },
+          data: {
+            currentStatus: 'Enrolled',
+            recordDate: enrolDate,
+            completionDate: null,
+            score: null
+          }
+        });
+        return refreshedEnrollment;
+      }
       throw new Error('Already enrolled in this assessment');
     }
     

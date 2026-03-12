@@ -178,14 +178,40 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
     
     // Auto-enroll in courses
     for (const pathwayCourse of pathwayCourses) {
-      const existingCourseEnrollment = await prisma.employees_courses.findFirst({
+      const activeCourseEnrollment = await prisma.employees_courses.findFirst({
         where: {
           courseID: pathwayCourse.courseID,
-          employeeID: employeeID
+          employeeID: employeeID,
+          NOT: {
+            currentStatus: 'Expired'
+          }
+        }
+      });
+
+      if (activeCourseEnrollment) {
+        continue;
+      }
+
+      const expiredCourseEnrollment = await prisma.employees_courses.findFirst({
+        where: {
+          courseID: pathwayCourse.courseID,
+          employeeID: employeeID,
+          currentStatus: 'Expired'
         }
       });
       
-      if (!existingCourseEnrollment) {
+      if (expiredCourseEnrollment) {
+        await prisma.employees_courses.update({
+          where: { employee_courseID: expiredCourseEnrollment.employee_courseID },
+          data: {
+            currentStatus: 'Enrolled',
+            recordDate: enrolDate,
+            completionDate: null,
+            score: null
+          }
+        });
+        console.log(`Refreshed expired course enrollment for employee ${employeeID} on course ${pathwayCourse.courseID}`);
+      } else {
         await prisma.employees_courses.create({
           data: {
             employeeID: employeeID,
@@ -200,14 +226,40 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
     
     // Auto-enroll in assessments
     for (const pathwayAssessment of pathwayAssessments) {
-      const existingAssessmentEnrollment = await prisma.employees_assessments.findFirst({
+      const activeAssessmentEnrollment = await prisma.employees_assessments.findFirst({
         where: {
           assessmentID: pathwayAssessment.assessmentID,
-          employeeID: employeeID
+          employeeID: employeeID,
+          NOT: {
+            currentStatus: 'Expired'
+          }
+        }
+      });
+
+      if (activeAssessmentEnrollment) {
+        continue;
+      }
+
+      const expiredAssessmentEnrollment = await prisma.employees_assessments.findFirst({
+        where: {
+          assessmentID: pathwayAssessment.assessmentID,
+          employeeID: employeeID,
+          currentStatus: 'Expired'
         }
       });
       
-      if (!existingAssessmentEnrollment) {
+      if (expiredAssessmentEnrollment) {
+        await prisma.employees_assessments.update({
+          where: { employee_assessmentID: expiredAssessmentEnrollment.employee_assessmentID },
+          data: {
+            currentStatus: 'Enrolled',
+            recordDate: enrolDate,
+            completionDate: null,
+            score: null
+          }
+        });
+        console.log(`Refreshed expired assessment enrollment for employee ${employeeID} on assessment ${pathwayAssessment.assessmentID}`);
+      } else {
         await prisma.employees_assessments.create({
           data: {
             employeeID: employeeID,
@@ -385,22 +437,87 @@ async function deletePathway(pathwayID, token) {
       throw new Error('Unauthorized: You can only delete pathways you manage');
     }
     
-    // Delete related data first
-    await prisma.pathways_employees.deleteMany({
-      where: { pathwayID: parseInt(pathwayID) }
-    });
-    
-    await prisma.pathways_courses.deleteMany({
-      where: { pathwayID: parseInt(pathwayID) }
-    });
-    
-    await prisma.pathways_assessments.deleteMany({
-      where: { pathwayID: parseInt(pathwayID) }
-    });
-    
-    // Delete the pathway
-    const deletedPathway = await prisma.pathways.delete({
-      where: { pathwayID: parseInt(pathwayID) }
+    const parsedPathwayId = parseInt(pathwayID);
+
+    const [pathwayEnrollments, pathwayCourses, pathwayAssessments, pathwayTemplates] = await Promise.all([
+      prisma.pathways_employees.findMany({
+        where: { pathwayID: parsedPathwayId },
+        select: { employeeID: true }
+      }),
+      prisma.pathways_courses.findMany({
+        where: { pathwayID: parsedPathwayId },
+        select: { courseID: true }
+      }),
+      prisma.pathways_assessments.findMany({
+        where: { pathwayID: parsedPathwayId },
+        select: { assessmentID: true }
+      }),
+      prisma.pathways_experience_templates.findMany({
+        where: { pathwayID: parsedPathwayId },
+        select: { experience_templateID: true }
+      })
+    ]);
+
+    const employeeIds = pathwayEnrollments.map((item) => item.employeeID);
+    const courseIds = pathwayCourses.map((item) => item.courseID);
+    const assessmentIds = pathwayAssessments.map((item) => item.assessmentID);
+    const templateIds = pathwayTemplates.map((item) => item.experience_templateID);
+
+    const deletedPathway = await prisma.$transaction(async (tx) => {
+      if (employeeIds.length && templateIds.length) {
+        await tx.employees_experiences.deleteMany({
+          where: {
+            employeeID: { in: employeeIds },
+            experience_templateID: { in: templateIds },
+            OR: [
+              { refereeText: null },
+              { refereeText: '' }
+            ]
+          }
+        });
+      }
+
+      if (employeeIds.length && courseIds.length) {
+        await tx.employees_courses.deleteMany({
+          where: {
+            employeeID: { in: employeeIds },
+            courseID: { in: courseIds },
+            completionDate: null,
+            score: null
+          }
+        });
+      }
+
+      if (employeeIds.length && assessmentIds.length) {
+        await tx.employees_assessments.deleteMany({
+          where: {
+            employeeID: { in: employeeIds },
+            assessmentID: { in: assessmentIds },
+            completionDate: null,
+            score: null
+          }
+        });
+      }
+
+      await tx.pathways_employees.deleteMany({
+        where: { pathwayID: parsedPathwayId }
+      });
+
+      await tx.pathways_courses.deleteMany({
+        where: { pathwayID: parsedPathwayId }
+      });
+
+      await tx.pathways_assessments.deleteMany({
+        where: { pathwayID: parsedPathwayId }
+      });
+
+      await tx.pathways_experience_templates.deleteMany({
+        where: { pathwayID: parsedPathwayId }
+      });
+
+      return tx.pathways.delete({
+        where: { pathwayID: parsedPathwayId }
+      });
     });
     
     console.log('deletePathway: Pathway deleted successfully');

@@ -234,6 +234,131 @@ async function updatePathway(pathwayID, updateData) {
   }
 }
 
+// UPDATE PATHWAY ENROLLMENT
+// Current business rule: pathway managers can withdraw learners from pathway tracking.
+// This removes pathway enrollment plus non-completed pathway experience records and
+// enrolled-only course/assessment records that came from pathway enrollment.
+async function updatePathwayEnrollment(enrollmentId, updateData, token) {
+  try {
+    if (updateData.newStatus !== 'Withdrawn') {
+      throw new Error('Only "Withdrawn" is supported for pathway enrollment updates');
+    }
+
+    const employeeEmail = jwtDecode(token).email;
+    const manager = await prisma.employees.findFirst({
+      where: { email: employeeEmail },
+      select: { employeeID: true }
+    });
+
+    if (!manager) {
+      throw new Error('Employee not found');
+    }
+
+    const enrollment = await prisma.pathways_employees.findUnique({
+      where: { pathway_employeeID: parseInt(enrollmentId) },
+      include: {
+        pathways: {
+          select: {
+            pathwayID: true,
+            pathwayManagerID: true,
+            pathwayName: true
+          }
+        }
+      }
+    });
+
+    if (!enrollment) {
+      throw new Error('Pathway enrollment not found');
+    }
+
+    if (!enrollment.pathways || enrollment.pathways.pathwayManagerID !== manager.employeeID) {
+      throw new Error('Unauthorized: You can only update enrollments on pathways you manage');
+    }
+
+    const pathwayId = enrollment.pathwayID;
+    const employeeId = enrollment.employeeID;
+
+    const [pathwayCourses, pathwayAssessments, pathwayTemplates] = await Promise.all([
+      prisma.pathways_courses.findMany({
+        where: { pathwayID: pathwayId },
+        select: { courseID: true }
+      }),
+      prisma.pathways_assessments.findMany({
+        where: { pathwayID: pathwayId },
+        select: { assessmentID: true }
+      }),
+      prisma.pathways_experience_templates.findMany({
+        where: { pathwayID: pathwayId },
+        select: { experience_templateID: true }
+      })
+    ]);
+
+    const courseIds = pathwayCourses.map((item) => item.courseID);
+    const assessmentIds = pathwayAssessments.map((item) => item.assessmentID);
+    const templateIds = pathwayTemplates.map((item) => item.experience_templateID);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const pathwayEnrollmentDelete = await tx.pathways_employees.deleteMany({
+        where: {
+          pathway_employeeID: parseInt(enrollmentId),
+          employeeID: employeeId,
+          pathwayID: pathwayId
+        }
+      });
+
+      const removedExperiences = templateIds.length
+        ? await tx.employees_experiences.deleteMany({
+            where: {
+              employeeID: employeeId,
+              experience_templateID: { in: templateIds },
+              OR: [
+                { refereeText: null },
+                { refereeText: '' }
+              ]
+            }
+          })
+        : { count: 0 };
+
+      const removedCourses = courseIds.length
+        ? await tx.employees_courses.deleteMany({
+            where: {
+              employeeID: employeeId,
+              courseID: { in: courseIds },
+              completionDate: null,
+              score: null
+            }
+          })
+        : { count: 0 };
+
+      const removedAssessments = assessmentIds.length
+        ? await tx.employees_assessments.deleteMany({
+            where: {
+              employeeID: employeeId,
+              assessmentID: { in: assessmentIds },
+              completionDate: null,
+              score: null
+            }
+          })
+        : { count: 0 };
+
+      return {
+        pathwayId,
+        pathwayName: enrollment.pathways.pathwayName,
+        employeeId,
+        removedPathwayEnrollments: pathwayEnrollmentDelete.count,
+        removedIncompleteExperiences: removedExperiences.count,
+        removedEnrolledCourses: removedCourses.count,
+        removedEnrolledAssessments: removedAssessments.count
+      };
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error updating pathway enrollment:', error);
+    throw error;
+  }
+}
+
 // GET AVAILABLE COURSES FOR PATHWAY
 async function getAvailableCourses(pathwayID, token) {
   try {
@@ -974,6 +1099,7 @@ module.exports = {
   getPathwaysList,
   getManagedPathways,
   updatePathway,
+  updatePathwayEnrollment,
   getAvailableCourses,
   getAvailableAssessments,
   getAvailableExperienceTemplates,
