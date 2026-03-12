@@ -630,6 +630,7 @@ function Contents() {
         closeOnBackdropClick={false}
         heading={`Edit ${contentType === 'course' ? 'Course' : 'Assessment'}`}
         disable-height-constraint='true'
+        hideDefaultControls="true"
         buttons="false"
         onIcDialogClosed={() => setEditDialogOpen(false)}>
         <form onSubmit={(e) => {

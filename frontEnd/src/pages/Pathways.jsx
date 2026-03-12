@@ -222,6 +222,7 @@ function Pathways() {
         closeOnBackdropClick={false}
         heading="Create a new Pathway that you will manage"
         disable-height-constraint='true'
+        hideDefaultControls="true"
         buttons="false"
         onIcDialogClosed={() => closeDialog('createPathway')}
       >

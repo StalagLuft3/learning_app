@@ -162,6 +162,7 @@ function Courses() {
         closeOnBackdropClick={false}
         heading="Create a new Course that you will manage"
         disable-height-constraint='true'
+        hideDefaultControls="true"
         buttons="false"
         onIcDialogClosed={() => closeDialog('createCourse')}
       >

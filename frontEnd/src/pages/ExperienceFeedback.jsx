@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCardVertical, IcDialog, IcHero, IcStatusTag, IcTextField, IcTypography, IcAlert } from "@ukic/react";
-import { mdiPuzzleOutline, mdiToggleSwitch, mdiToggleSwitchOff } from "@mdi/js";
+import { IcButton, IcCardVertical, IcDialog, IcHero, IcStatusTag, IcTextField, IcTypography, IcAlert, IcSwitch } from "@ukic/react";
+import { mdiPuzzleOutline } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ContentManagementHeader";
 import Footer from "../components/ITRFooter";
@@ -112,7 +112,10 @@ function ExperienceFeedback() {
             <IcHero
                 heading="Experience Feedback"
                 subheading="Provide feedback on employee experiences as their referee"
-                secondaryHeading={`You have ${awaitingCount} feedback requests awaiting response`}
+                secondaryHeading={showOnlyAwaiting
+                    ? `You have ${awaitingCount} feedback requests awaiting response`
+                    : `You have ${totalCount} total experience requests`
+                }
                 aligned="full-width">
             </IcHero>
 
@@ -127,21 +130,13 @@ function ExperienceFeedback() {
                 />
             )}
             
-            <div style={{ textAlign: 'center', marginBottom: '16px', color: '#666' }}>
-                <IcTypography variant="body">
-                    You have {totalCount} total experience requests
-                </IcTypography>
-            </div>
-            
-            <div style={divContainer}>
-                <IcButton 
-                    variant={showOnlyAwaiting ? "primary" : "secondary"}
-                    onClick={() => setShowOnlyAwaiting(!showOnlyAwaiting)}
-                    style={{ marginBottom: '16px' }}
-                >
-                    <SlottedSVGTemplate mdiIcon={showOnlyAwaiting ? mdiToggleSwitch : mdiToggleSwitchOff} />
-                    Show only requests awaiting response
-                </IcButton>
+            <div style={{ ...divContainer, display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                <IcSwitch
+                    label="Show only requests awaiting response"
+                    checked={showOnlyAwaiting}
+                    onIcChange={(e) => setShowOnlyAwaiting(e.detail.checked)}
+                    size="small"
+                />
             </div>
             
             {dataSubset.length === 0 ? (

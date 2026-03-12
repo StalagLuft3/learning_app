@@ -632,6 +632,7 @@ function Record() {
       closeOnBackdropClick={false}
       heading="Record your experience here."
       disable-height-constraint='true'
+      hideDefaultControls="true"
       buttons="false"
       onIcDialogClosed={() => closeDialog("recordExperience")}
     >

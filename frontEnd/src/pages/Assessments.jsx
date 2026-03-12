@@ -166,6 +166,7 @@ function Assessments() {
         closeOnBackdropClick={false}
         heading="Create a new Assessment that you will manage"
         disable-height-constraint='true'
+        hideDefaultControls="true"
         buttons="false"
         onIcDialogClosed={() => closeDialog('createAssessment')}>
         <form ref={assessmentFormRef} onSubmit={async (e) => {

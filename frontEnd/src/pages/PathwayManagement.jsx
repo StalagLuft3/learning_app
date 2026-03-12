@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcSearchBar, IcAccordion } from "@ukic/react";
-import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckDecagramOutline, mdiPencil, mdiCheck, mdiClose, mdiChartLine, mdiPlus, mdiNavigationVariantOutline, mdiDelete, mdiBook, mdiPuzzleOutline } from "@mdi/js";
+import { IcButton, IcCardVertical, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcSectionContainer, IcDialog, IcSearchBar, IcAccordion } from "@ukic/react";
+import { mdiAccountCheck, mdiCheckDecagramOutline, mdiPencil, mdiCheck, mdiClose, mdiChartLine, mdiPlus, mdiNavigationVariantOutline, mdiDelete, mdiBook, mdiPuzzleOutline } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 
 import Header from "../components/ContentManagementHeader";
@@ -22,8 +22,12 @@ const PathwayManagement = () => {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('success');
-  const [showOnlyInProgress, setShowOnlyInProgress] = useState(false);
   const [activeTab, setActiveTab] = useState(null);
+  const [createPathwayDialogOpen, setCreatePathwayDialogOpen] = useState(false);
+  const [createPathwayFormData, setCreatePathwayFormData] = useState({
+    pathwayName: '',
+    pathwayDescription: ''
+  });
 
   // Content management states
   const [contentDialogOpen, setContentDialogOpen] = useState(false);
@@ -393,6 +397,20 @@ const PathwayManagement = () => {
     }
     
     return { status, color };
+  };
+
+  const formatEnrollmentDate = (dateValue) => {
+    if (!dateValue) return 'Unknown Date';
+    const parsedDate = new Date(dateValue);
+    if (Number.isNaN(parsedDate.getTime())) return String(dateValue);
+    return parsedDate.toLocaleDateString('en-GB');
+  };
+
+  const getUnitsCompletionPercentage = (enrollment) => {
+    const totalUnits = Number(enrollment?.totalComponents) || 0;
+    const completedUnits = Number(enrollment?.completedComponents) || 0;
+    if (totalUnits <= 0) return 0;
+    return Math.round((Math.min(completedUnits, totalUnits) / totalUnits) * 100);
   };
 
   // ===== CONTENT MANAGEMENT FUNCTIONS =====
@@ -808,6 +826,87 @@ const PathwayManagement = () => {
     return names[contentType] || contentType;
   };
 
+  const openCreatePathwayDialog = () => {
+    setCreatePathwayFormData({
+      pathwayName: '',
+      pathwayDescription: ''
+    });
+    setCreatePathwayDialogOpen(true);
+  };
+
+  const closeCreatePathwayDialog = () => {
+    setCreatePathwayDialogOpen(false);
+    setCreatePathwayFormData({
+      pathwayName: '',
+      pathwayDescription: ''
+    });
+  };
+
+  const handleCreatePathwayFieldChange = (fieldName, value) => {
+    setCreatePathwayFormData(prev => ({
+      ...prev,
+      [fieldName]: value
+    }));
+  };
+
+  const handleCreatePathway = async () => {
+    const pathwayName = createPathwayFormData.pathwayName.trim();
+    const pathwayDescription = createPathwayFormData.pathwayDescription.trim();
+
+    if (pathwayName.length < 4) {
+      setAlertMessage('Pathway name must be at least 4 characters long');
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 3000);
+      return;
+    }
+
+    if (pathwayDescription.length < 16) {
+      setAlertMessage('Pathway description must be at least 16 characters long');
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 3000);
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const response = await fetch('http://localhost:5000/pathways/createPathway', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pathwayName,
+          pathwayDescription
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setAlertMessage('Pathway created successfully!');
+        setAlertType('success');
+        setAlertVisible(true);
+        closeCreatePathwayDialog();
+        await loadManagedPathways();
+        setTimeout(() => setAlertVisible(false), 3000);
+      } else {
+        throw new Error(result.error || result.errors || 'Failed to create pathway');
+      }
+    } catch (error) {
+      console.error('Failed to create pathway:', error);
+      setAlertMessage(`Failed to create pathway: ${error.message || 'Please try again.'}`);
+      setAlertType('warning');
+      setAlertVisible(true);
+      setTimeout(() => setAlertVisible(false), 5000);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return <IcTypography variant="body">Loading managed pathways...</IcTypography>;
   }
@@ -838,11 +937,7 @@ const PathwayManagement = () => {
         <IcButton 
           slot="interaction"
           variant="primary"
-          onClick={() => {
-            console.log('Creating new pathway');
-            // TODO: Implement create pathway functionality
-            alert('Create Pathway functionality - To be implemented');
-          }}
+          onClick={openCreatePathwayDialog}
         >
           <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
           Create Pathway
@@ -891,12 +986,6 @@ const PathwayManagement = () => {
           }}
         >
           {managedPathways.map((pathway) => {
-            // Calculate in progress count for this pathway
-            const inProgressCount = pathway.enrollments?.filter(enrollment => {
-              const status = getPathwayStatus(enrollment);
-              return status?.status === 'In Progress';
-            }).length || 0;
-
             return (
               <IcTab 
                 key={pathway.pathwayID} 
@@ -908,39 +997,28 @@ const PathwayManagement = () => {
               >
                 <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
                 {pathway.pathwayName}
-                {inProgressCount > 0 && (
-                  <IcBadge 
-                    type="text"
-                    label={inProgressCount.toString()} 
-                    variant="info" 
-                    style={{ marginLeft: '8px' }}
-                  />
-                )}
               </IcTab>
             );
           })}
         </IcTabGroup>
 
         {managedPathways.map((pathway) => {
-          const inProgressEnrollments = pathway.enrollments?.filter(enrollment => {
-            const status = getPathwayStatus(enrollment);
-            return status?.status === 'In Progress';
-          }) || [];
-          
-          const currentEnrollments = showOnlyInProgress ? inProgressEnrollments : (pathway.enrollments || []);
+          const sortedEnrollments = [...(pathway.enrollments || [])].sort((a, b) => {
+            const dateA = new Date(a?.recordDate || 0).getTime();
+            const dateB = new Date(b?.recordDate || 0).getTime();
+            return dateB - dateA;
+          });
+          const totalEnrollees = sortedEnrollments.length;
+          const completedEnrollees = sortedEnrollments.filter(enrollment => enrollment.currentStatus === 'Completed').length;
           
           return (
             <IcTabPanel key={pathway.pathwayID} value={pathway.pathwayID.toString()}>
               {/* Content Management Section */}
               <div style={{ padding: 'var(--ic-space-xs)', width: '85%' }}>
-                <IcTypography variant="h3" style={{ marginBottom: '16px' }}>
-                  Pathway Content Management
-                </IcTypography>
-                
                 {/* Single Add Content Card */}
                 <IcCardVertical
                   style={{ ...cardContainer, marginBottom: '24px' }}
-                  heading="Add Content to Pathway"
+                  heading={`Add Content to ${pathway.pathwayName || 'This'}`}
                   subheading="Choose content type to add to this pathway"
                 >
                   <SlottedSVGTemplate mdiIcon={mdiPlus} />
@@ -1003,7 +1081,6 @@ const PathwayManagement = () => {
                                 message={course.description || 'No description available'}
                               >
                                 <SlottedSVGTemplate mdiIcon={mdiBook} />
-                                <IcStatusTag label="Course" status="info" slot="interaction-button" />
                                 <div slot="interaction-controls" style={{ display: "flex", gap: "8px" }}>
                                   <IcButton 
                                     size="small" 
@@ -1041,7 +1118,6 @@ const PathwayManagement = () => {
                                   message={assessment.description || 'No description available'}
                                 >
                                   <SlottedSVGTemplate mdiIcon={mdiCheckDecagramOutline} />
-                                  <IcStatusTag label="Assessment" status="success" slot="interaction-button" />
                                   <div slot="interaction-controls" style={{ display: "flex", gap: "8px" }}>
                                     <IcButton 
                                       size="small" 
@@ -1068,88 +1144,63 @@ const PathwayManagement = () => {
                 )}
 
                 {/* Student Enrollments Section */}
-                {currentEnrollments && currentEnrollments.length > 0 && (
-                  <IcAccordion heading={`Student Enrollments (${currentEnrollments.length})`} style={{ marginBottom: '16px' }}>
-                    <div style={{ marginBottom: '16px' }}>
-                      <IcButton 
-                        variant={showOnlyInProgress ? "primary" : "secondary"}
-                        onClick={() => setShowOnlyInProgress(!showOnlyInProgress)}
-                        size="small"
-                      >
-                        <SlottedSVGTemplate mdiIcon={showOnlyInProgress ? mdiToggleSwitch : mdiToggleSwitchOff} />
-                        Show only in progress ({inProgressEnrollments.length})
-                      </IcButton>
-                    </div>
-                    {currentEnrollments.map((enrollment, index) => {
-                      const status = getPathwayStatus(enrollment);
-                      
-                      return (
-                        <div key={index} style={{ ...divContainer, marginBottom: '16px' }}>
-                          <div>
-                            <IcCardVertical 
-                              fullWidth="true"
-                              style={cardContainer}
-                              heading={enrollment.username || 'Unknown Student'}
-                              subheading={`${enrollment.role || 'Unknown Role'} | Enrolled: ${enrollment.recordDate || 'Unknown Date'} | Current Status: ${status?.status || 'In Progress'}`}
-                              message={`Student enrolled in pathway with current status: ${status?.status || 'In Progress'}`}
-                            >
-                              <SlottedSVGTemplate mdiIcon={mdiAccountCheck} />
-                              <IcStatusTag 
-                                slot="interaction-button" 
-                                label={status?.status || 'In Progress'} 
-                                status={status?.color || 'info'} 
-                              />
+                <IcAccordion heading={`Student Enrollments (${sortedEnrollments.length})`} style={{ marginBottom: '16px' }}>
+                    <IcTypography variant="body" style={{ marginBottom: '16px' }}>
+                      Enrollees: {totalEnrollees} | Completed: {completedEnrollees}
+                    </IcTypography>
 
-                              <div slot="interaction-controls" style={{ display: "flex", gap: "16px", alignItems: "flex-end" }}>
-                                {editingItemId === enrollment.pathway_employeeID ? (
-                                  <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
-                                    <IcSelect
-                                      label="Status"
-                                      value={tempStatus}
-                                      onIcChange={(e) => setTempStatus(e.detail.value)}
-                                      options={[
-                                        { label: 'In Progress', value: 'In Progress' },
-                                        { label: 'Completed', value: 'Completed' },
-                                        { label: 'Withdrawn', value: 'Withdrawn' }
-                                      ]}
-                                      style={{ width: '150px' }}
-                                    />
-                                    <IcButton 
-                                      variant="primary"
-                                      size="small"
-                                      onClick={() => handleSubmitEnrollmentUpdate(enrollment, tempStatus)}
-                                      disabled={submitting}
-                                    >
-                                      <SlottedSVGTemplate mdiIcon={mdiCheck} />
-                                      Save
-                                    </IcButton>
-                                    <IcButton 
-                                      variant="secondary"
-                                      size="small"
-                                      onClick={handleCancelEdit}
-                                    >
-                                      <SlottedSVGTemplate mdiIcon={mdiClose} />
-                                      Cancel
-                                    </IcButton>
-                                  </div>
-                                ) : (
-                                  <IcButton 
-                                    variant="primary"
-                                    size="small"
-                                    onClick={() => handleStartEdit(enrollment)}
-                                  >
-                                    Update Status
-                                    <SlottedSVGTemplate mdiIcon={mdiAccountCheck} />
-                                  </IcButton>
-                                )}
-                              </div>
-                            </IcCardVertical>
+                    {sortedEnrollments.length === 0 ? (
+                      <IcTypography variant="body" style={{ color: '#666' }}>
+                        No enrollees yet.
+                      </IcTypography>
+                    ) : (
+                    <div style={{ border: '1px solid #e0e0e0', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1.75fr 1fr 1fr 1fr 1fr',
+                        gap: '16px',
+                        padding: '16px',
+                        backgroundColor: '#f5f5f5',
+                        borderBottom: '1px solid #e0e0e0',
+                        fontWeight: 'bold',
+                        fontSize: '14px'
+                      }}>
+                        <div>Enrollee</div>
+                        <div>Role</div>
+                        <div>Enrolled On</div>
+                        <div>Time Complete</div>
+                        <div>Units Complete</div>
+                      </div>
+
+                      {sortedEnrollments.map((enrollment, index) => {
+                        const timeCompletion = Number(enrollment?.completionPercentage) || 0;
+                        const unitsCompletion = getUnitsCompletionPercentage(enrollment);
+
+                        return (
+                          <div
+                            key={enrollment.pathway_employeeID || `${enrollment.employeeID}-${index}`}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '1.75fr 1fr 1fr 1fr 1fr',
+                              gap: '16px',
+                              padding: '16px',
+                              borderBottom: index < sortedEnrollments.length - 1 ? '1px solid #e0e0e0' : 'none',
+                              backgroundColor: index % 2 === 0 ? '#fafafa' : '#fff',
+                              alignItems: 'center',
+                              fontSize: '14px'
+                            }}
+                          >
+                            <div style={{ fontWeight: '500' }}>{enrollment.username || 'Unknown Student'}</div>
+                            <div>{enrollment.role || 'Unknown Role'}</div>
+                            <div>{formatEnrollmentDate(enrollment.recordDate)}</div>
+                            <div>{timeCompletion}%</div>
+                            <div>{unitsCompletion}%</div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                    )}
                   </IcAccordion>
-                )}
               </div>
             </IcTabPanel>
           );
@@ -1159,10 +1210,68 @@ const PathwayManagement = () => {
       {/* Edit Dialog */}
       <IcDialog
         size="large"
+        open={createPathwayDialogOpen}
+        closeOnBackdropClick={false}
+        heading="Create a New Pathway"
+        hideDefaultControls="true"
+        buttons="false"
+        onIcDialogClosed={closeCreatePathwayDialog}
+      >
+        <IcTextField
+          value={createPathwayFormData.pathwayName}
+          onIcInput={(e) => handleCreatePathwayFieldChange('pathwayName', e.detail.value)}
+          label="Pathway Name"
+          type="text"
+          minCharacters={4}
+          maxCharcters={64}
+          fullWidth="full-width"
+          required
+          style={{ marginBottom: '16px' }}
+        />
+        <IcTextField
+          value={createPathwayFormData.pathwayDescription}
+          onIcInput={(e) => handleCreatePathwayFieldChange('pathwayDescription', e.detail.value)}
+          label="Pathway Description"
+          rows={3}
+          type="text"
+          minCharacters={16}
+          maxCharcters={256}
+          fullWidth="full-width"
+          required
+          style={{ marginBottom: '24px' }}
+        />
+
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
+          <IcButton
+            variant="tertiary"
+            onClick={closeCreatePathwayDialog}
+            disabled={submitting}
+          >
+            Cancel
+          </IcButton>
+          <IcButton
+            variant="primary"
+            onClick={handleCreatePathway}
+            disabled={
+              submitting ||
+              createPathwayFormData.pathwayName.trim().length < 4 ||
+              createPathwayFormData.pathwayDescription.trim().length < 16
+            }
+          >
+            <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
+            Create Pathway
+          </IcButton>
+        </div>
+      </IcDialog>
+
+      {/* Edit Dialog */}
+      <IcDialog
+        size="large"
         open={editDialogOpen}
         closeOnBackdropClick={false}
         heading="Edit Pathway"
         disable-height-constraint='true'
+        hideDefaultControls="true"
         buttons="false"
         onIcDialogClosed={() => setEditDialogOpen(false)}>
         <form onSubmit={(e) => {
