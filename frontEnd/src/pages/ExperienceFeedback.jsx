@@ -15,7 +15,7 @@ function ExperienceFeedback() {
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState('success');
-    
+
     useEffect(() => {
         fetchData("/feedback")
             .then(data => setData(data.feedback))
@@ -37,7 +37,7 @@ function ExperienceFeedback() {
     const handleSubmitRefereeFeedback = async () => {
         try {
             setSubmittingFeedback(true);
-            
+
             const form = document.getElementById('recordRefereeFeedback');
             const formData = new FormData(form);
             const feedbackData = {
@@ -45,9 +45,9 @@ function ExperienceFeedback() {
                 employeeIndex: employeesIDList[dialogIndex],
                 employeeExperienceIndex: employeesExperienceIDList[dialogIndex]
             };
-            
+
             console.log('Submitting referee feedback:', feedbackData);
-            
+
             const response = await fetch('http://localhost:5000/Feedback/recordRefereeFeedback', {
                 method: 'POST',
                 headers: {
@@ -58,7 +58,7 @@ function ExperienceFeedback() {
             });
 
             const result = await response.json();
-            
+
             if (response.ok) {
                 console.log('Referee feedback recorded successfully:', result);
                 setAlertMessage('Feedback submitted successfully!');
@@ -82,7 +82,7 @@ function ExperienceFeedback() {
                     setAlertVisible(false);
                 }, 5000);
             }
-            
+
         } catch (error) {
             console.error('Error submitting referee feedback:', error);
             setAlertMessage(`Error submitting feedback: ${error.message || 'Please try again.'}`);
@@ -100,12 +100,12 @@ function ExperienceFeedback() {
     let employeesExperienceIDList = extractEmployeesExperienceIDList(data);
     let awaitingFeedbackFilter = filterAwaitingFeedbackIndices(data);
     let filteredFeedbackList = filterFeedbackList(data);
-    
+
     // Apply filtering based on toggle
     let dataSubset = showOnlyAwaiting ? filteredFeedbackList : data;
     const awaitingCount = awaitingFeedbackFilter.length;
     const totalCount = data.length;
-    
+
     return (
         <> {/* Main container */}
             <Header />
@@ -129,7 +129,7 @@ function ExperienceFeedback() {
                     style={{ margin: '16px', marginBottom: '24px' }}
                 />
             )}
-            
+
             <div style={{ ...divContainer, display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
                 <IcSwitch
                     label="Show only requests awaiting response"
@@ -138,10 +138,8 @@ function ExperienceFeedback() {
                     size="small"
                 />
             </div>
-            
-            {dataSubset.length === 0 ? (
-                <IcTypography variant="body">No experience feedback requests requiring your attention.</IcTypography>
-            ) : (
+
+            {
                 dataSubset.map((d, i) => {
                     return (
                         <div key={i} style={divContainer}>
@@ -174,8 +172,8 @@ function ExperienceFeedback() {
                         </div>
                     );
                 })
-            )}
-            
+            }
+
             <Footer />
             <IcDialog
                 size="large"
