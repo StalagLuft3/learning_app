@@ -766,6 +766,7 @@ function Contents() {
         open={deleteConfirmOpen}
         heading="Confirm Delete"
         buttons="false"
+        hideCloseButton="true"
         onIcDialogClosed={() => setDeleteConfirmOpen(false)}>
         <div>
           <p>Are you sure you want to delete this {contentType === 'course' ? 'course' : 'assessment'}?</p>

@@ -17,7 +17,6 @@ function Home() {
   const [data, setData] = useState([]);
   const [refereeItems, setRefereeItems] = useState({ experiences: [], courseEnrollments: [], assessments: [] });
   const [userInfo, setUserInfo] = useState(null);
-  const [awaitingPathways, setAwaitingPathways] = useState(0);
 
   useEffect(() => {
     // Fetch feedback requests (experiences)
@@ -30,27 +29,14 @@ function Home() {
       .then((userData) => {
         setUserInfo(userData);
         if (!userData?.employeeID) {
-          return Promise.resolve([{ experiences: [], courseEnrollments: [], assessments: [] }, { pathways: [] }]);
+          return Promise.resolve({ experiences: [], courseEnrollments: [], assessments: [] });
         }
 
-        // Fetch referee items and managed pathways for this user
-        return Promise.all([
-          fetchData(`/feedback/referee-items/${userData.employeeID}`),
-          fetchData(`/ManageContents/pathways/${userData.employeeID}`).catch(() => ({ pathways: [] }))
-        ]);
+        // Fetch referee items for this user
+        return fetchData(`/feedback/referee-items/${userData.employeeID}`);
       })
-      .then(([refereeData, managedPathwaysData]) => {
+      .then((refereeData) => {
         setRefereeItems(refereeData);
-
-        const pathways = Array.isArray(managedPathwaysData?.pathways) ? managedPathwaysData.pathways : [];
-        const totalInProgressAcrossManagedPathways = pathways.reduce((sum, pathway) => {
-          const inProgressCount = pathway.enrollments?.filter(
-            (enrollment) => (enrollment.currentStatus || 'In Progress') === 'In Progress'
-          ).length || 0;
-          return sum + inProgressCount;
-        }, 0);
-
-        setAwaitingPathways(totalInProgressAcrossManagedPathways);
       })
       .catch(err => console.error(err));
   }, []);
@@ -114,8 +100,7 @@ function Home() {
       title: "Pathway Management",
       description: "Design learning pathways and manage student progress through structured programs", 
       path: "/PathwayManagement",
-      icon: mdiNavigationVariantOutline,
-      badge: awaitingPathways
+      icon: mdiNavigationVariantOutline
     },
     {
       title: "Feedback Management",

@@ -992,6 +992,7 @@ const CourseManagement = () => {
         size="small"
         open={deleteConfirmOpen}
         heading="Confirm Delete"
+        hideDefaultControls="true"
         buttons="false"
         onIcDialogClosed={() => setDeleteConfirmOpen(false)}>
         <div>

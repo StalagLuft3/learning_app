@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert } from "@ukic/react";
-import { mdiAccountCheck, mdiBookOutline, mdiAccountRemove } from "@mdi/js";
+import { mdiAccountCheck, mdiBookOutline } from "@mdi/js";
 import SlottedSVGTemplate from "./slottedSVGTemplate";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 import { fetchData } from "../commonFunctions/api";

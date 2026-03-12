@@ -655,6 +655,7 @@ const AssessmentManagement = () => {
         open={deleteConfirmOpen}
         closeOnBackdropClick={false}
         heading="Delete Assessment"
+        hideDefaultControls="true"
         onIcDialogClosed={() => setDeleteConfirmOpen(false)}>
         <IcTypography variant="body">
           Are you sure you want to delete this assessment? This action cannot be undone.

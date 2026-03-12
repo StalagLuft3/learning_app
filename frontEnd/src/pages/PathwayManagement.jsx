@@ -490,7 +490,15 @@ const PathwayManagement = () => {
       } else {
         const errorData = await response.text();
         console.error(`API Error - Status: ${response.status}, Data:`, errorData);
-        throw new Error('Failed to load available content');
+        let parsedError = '';
+        try {
+          const parsed = JSON.parse(errorData);
+          parsedError = parsed.error || parsed.message || '';
+        } catch (parseError) {
+          parsedError = errorData || '';
+        }
+        const suffix = parsedError ? `: ${parsedError}` : '';
+        throw new Error(`Failed to load available content (HTTP ${response.status})${suffix}`);
       }
     } catch (error) {
       console.error('Error loading available content:', error);
@@ -1347,6 +1355,7 @@ const PathwayManagement = () => {
         size="small"
         open={deleteConfirmOpen}
         heading="Confirm Delete"
+        hideDefaultControls="true"
         buttons="false"
         onIcDialogClosed={() => setDeleteConfirmOpen(false)}>
         <div>
@@ -1397,13 +1406,21 @@ const PathwayManagement = () => {
                     </IcTypography>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '400px', overflowY: 'auto' }}>
-                      {availableContent.map((pathway) => (
+                      {availableContent.map((pathway) => {
+                        const managerName = pathway.managerName || pathway.manager?.username || 'Unknown';
+                        const managerRole = pathway.managerRole || pathway.manager?.role || 'Unknown';
+                        const coursesCount = pathway.contentCount?.courses ?? pathway._count?.pathways_courses ?? 0;
+                        const assessmentsCount = pathway.contentCount?.assessments ?? pathway._count?.pathways_assessments ?? 0;
+                        const experienceTemplatesCount = pathway.contentCount?.experienceTemplates ?? pathway._count?.pathways_experience_templates ?? 0;
+
+                        return (
                         <IcCardVertical
                           key={pathway.pathwayID}
                           style={cardContainer}
                           heading={pathway.pathwayName}
-                          subheading={`Manager: ${pathway.managerName} (${pathway.managerRole})`}
-                          message={`Content: ${pathway.contentCount.courses} courses, ${pathway.contentCount.assessments} assessments, ${pathway.contentCount.experienceTemplates || 0} experience templates`}
+                          subheading={`Manager: ${managerName} (${managerRole})`}
+                          message={`Content: ${coursesCount} courses, ${assessmentsCount} assessments, ${experienceTemplatesCount} experience templates`}
+                          clickable="false"
                         >
                           <div slot="interaction-controls">
                             <IcButton 
@@ -1417,7 +1434,8 @@ const PathwayManagement = () => {
                             </IcButton>
                           </div>
                         </IcCardVertical>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </>
