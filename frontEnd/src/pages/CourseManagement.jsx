@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog } from "@ukic/react";
-import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiBookOutline, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiDelete } from "@mdi/js";
+import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcSwitch } from "@ukic/react";
+import { mdiAccountCheck, mdiBookOutline, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiDelete } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 import Header from "../components/ContentManagementHeader";
 import Footer from "../components/ITRFooter";
@@ -689,24 +689,15 @@ const CourseManagement = () => {
                     Student Enrollments ({course.enrollments.length})
                   </IcTypography>
                   
-                  <IcButton 
-                    variant={showOnlyAwaiting ? "primary" : "secondary"}
-                    onClick={() => setShowOnlyAwaiting(!showOnlyAwaiting)}
+                  <IcSwitch
+                    label={`Show only enrollments awaiting review (${awaitingEnrollments.length})`}
+                    checked={showOnlyAwaiting}
+                    onIcChange={(e) => setShowOnlyAwaiting(e.detail.checked)}
                     size="small"
-                  >
-                    <SlottedSVGTemplate mdiIcon={showOnlyAwaiting ? mdiToggleSwitch : mdiToggleSwitchOff} />
-                    Show only awaiting review ({awaitingEnrollments.length})
-                  </IcButton>
+                  />
                 </div>
 
-                {currentEnrollments.length === 0 ? (
-                  <IcTypography variant="body" style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
-                    {showOnlyAwaiting 
-                      ? 'No enrollments awaiting review for this course.' 
-                      : 'No student enrollments found for this course.'
-                    }
-                  </IcTypography>
-                ) : (
+                {currentEnrollments.length === 0 ? null : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {currentEnrollments.map((enrollment, index) => {
                       const status = getStatusDisplay(enrollment);

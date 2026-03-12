@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcRadioGroup, IcRadioOption } from "@ukic/react";
-import { mdiAccountCheck, mdiToggleSwitch, mdiToggleSwitchOff, mdiCheckDecagramOutline, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiDelete } from "@mdi/js";
+import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcRadioGroup, IcRadioOption, IcSwitch } from "@ukic/react";
+import { mdiAccountCheck, mdiCheckDecagramOutline, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiDelete } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 
 import Header from "../components/ContentManagementHeader";
@@ -866,25 +866,16 @@ const AssessmentManagement = () => {
                   </IcTypography>
                   
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <IcButton 
-                      variant={showOnlyAwaiting ? "primary" : "secondary"}
-                      onClick={() => setShowOnlyAwaiting(!showOnlyAwaiting)}
+                    <IcSwitch
+                      label={`Show only enrollments awaiting review (${awaitingEnrollments.length})`}
+                      checked={showOnlyAwaiting}
+                      onIcChange={(e) => setShowOnlyAwaiting(e.detail.checked)}
                       size="small"
-                    >
-                      <SlottedSVGTemplate mdiIcon={showOnlyAwaiting ? mdiToggleSwitch : mdiToggleSwitchOff} />
-                      Awaiting Review ({awaitingEnrollments.length})
-                    </IcButton>
+                    />
                   </div>
                 </div>
 
-                {currentEnrollments.length === 0 ? (
-                  <IcTypography variant="body" style={{ textAlign: 'center', padding: '32px', color: '#666' }}>
-                    {showOnlyAwaiting 
-                      ? 'No enrollments awaiting review for this assessment.' 
-                      : 'No student enrollments found for this assessment.'
-                    }
-                  </IcTypography>
-                ) : (
+                {currentEnrollments.length === 0 ? null : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {currentEnrollments.map((enrollment, index) => {
                       const status = getStatusDisplay(enrollment);

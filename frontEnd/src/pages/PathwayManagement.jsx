@@ -346,10 +346,18 @@ const PathwayManagement = () => {
         body: JSON.stringify(updateData)
       });
 
-      const result = await response.json();
+      const rawResponse = await response.text();
+      let result = {};
+      try {
+        result = rawResponse ? JSON.parse(rawResponse) : {};
+      } catch (parseError) {
+        if (!response.ok) {
+          throw new Error('Server returned a non-JSON error response. If backend changes were just made, restart the backend server and try again.');
+        }
+      }
       
       if (response.ok) {
-        setAlertMessage(`${enrollment.username}'s pathway status has been updated to "${newStatus}"`);
+        setAlertMessage(`${enrollment.username} has been removed from this pathway.`);
         setAlertType('success');
         setAlertVisible(true);
         
@@ -361,7 +369,7 @@ const PathwayManagement = () => {
         handleCancelEdit();
         
       } else {
-        throw new Error(result.error || 'Failed to update enrollment');
+        throw new Error(result.error || result.message || `Failed to update enrollment (HTTP ${response.status})`);
       }
       
     } catch (error) {
@@ -1157,7 +1165,7 @@ const PathwayManagement = () => {
                     <div style={{ border: '1px solid #e0e0e0', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#fff' }}>
                       <div style={{
                         display: 'grid',
-                        gridTemplateColumns: '1.75fr 1fr 1fr 1fr 1fr',
+                        gridTemplateColumns: '1.75fr 1fr 1fr 1fr 1fr 120px',
                         gap: '16px',
                         padding: '16px',
                         backgroundColor: '#f5f5f5',
@@ -1170,6 +1178,7 @@ const PathwayManagement = () => {
                         <div>Enrolled On</div>
                         <div>Time Complete</div>
                         <div>Units Complete</div>
+                        <div style={{ textAlign: 'right' }}>Actions</div>
                       </div>
 
                       {sortedEnrollments.map((enrollment, index) => {
@@ -1181,7 +1190,7 @@ const PathwayManagement = () => {
                             key={enrollment.pathway_employeeID || `${enrollment.employeeID}-${index}`}
                             style={{
                               display: 'grid',
-                              gridTemplateColumns: '1.75fr 1fr 1fr 1fr 1fr',
+                              gridTemplateColumns: '1.75fr 1fr 1fr 1fr 1fr 120px',
                               gap: '16px',
                               padding: '16px',
                               borderBottom: index < sortedEnrollments.length - 1 ? '1px solid #e0e0e0' : 'none',
@@ -1195,6 +1204,17 @@ const PathwayManagement = () => {
                             <div>{formatEnrollmentDate(enrollment.recordDate)}</div>
                             <div>{timeCompletion}%</div>
                             <div>{unitsCompletion}%</div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                              <IcButton
+                                size="small"
+                                variant="destructive"
+                                onClick={() => handleSubmitEnrollmentUpdate(enrollment, 'Withdrawn')}
+                                disabled={submitting}
+                              >
+                                <SlottedSVGTemplate mdiIcon={mdiDelete} />
+                                Remove
+                              </IcButton>
+                            </div>
                           </div>
                         );
                       })}
