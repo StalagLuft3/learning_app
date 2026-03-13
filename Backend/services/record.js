@@ -3,7 +3,7 @@ const { jwtDecode } = require('jwt-decode');
 
 const prisma = new PrismaClient();
 
-// GET / READ
+ 
 async function loadRecord(token){
   try {
     const employeeEmail = jwtDecode(token).email;
@@ -17,7 +17,7 @@ async function loadRecord(token){
       throw new Error('Employee not found');
     }
     
-    // Get courses with enrollment info
+    
     const coursesRecord = await prisma.courses.findMany({
       where: {
         employees_courses: {
@@ -35,7 +35,7 @@ async function loadRecord(token){
       }
     });
 
-    // Get assessments with enrollment info
+    
     const assessmentRecord = await prisma.assessments.findMany({
       where: {
         employees_assessments: {
@@ -56,7 +56,7 @@ async function loadRecord(token){
       }
     });
 
-    // Get experience records
+    
     const experienceRecord = await prisma.employees_experiences.findMany({
       where: {
         employeeID: employee.employeeID
@@ -68,38 +68,35 @@ async function loadRecord(token){
       }
     });
 
-    // Flatten the nested data structures for frontend consumption
+    
     let fullRecord = [];
     
-    // Process courses - flatten the enrollment data
+    
     coursesRecord.forEach(course => {
-      const enrollment = course.employees_courses[0]; // Should only be one per user
+      const enrollment = course.employees_courses[0];
       fullRecord.push({
         ...course,
         employee_courseID: enrollment?.employee_courseID,
         currentStatus: enrollment?.currentStatus,
         recordDate: enrollment?.recordDate,
-        score: enrollment?.score, // Add missing score field
-        completionDate: enrollment?.completionDate, // Add missing completion date field
-        // Mark as course for frontend logic
+        score: enrollment?.score,
+        completionDate: enrollment?.completionDate,
         courseID: course.courseID
       });
     });
     
     // Process assessments - flatten the enrollment data  
     assessmentRecord.forEach(assessment => {
-      const enrollment = assessment.employees_assessments[0]; // Should only be one per user
+      const enrollment = assessment.employees_assessments[0];
       fullRecord.push({
         ...assessment,
         employee_assessmentID: enrollment?.employee_assessmentID,
         currentStatus: enrollment?.currentStatus,
         recordDate: enrollment?.recordDate,
-        scoreAchieved: enrollment?.score, // Fix: mapping from 'score' field in database
-        completionDate: enrollment?.completionDate, // Add missing completion date
-        // Remove accreditationDate - using completionDate instead
+        scoreAchieved: enrollment?.score,
+        completionDate: enrollment?.completionDate,
         username: assessment.manager?.username,
         role: assessment.manager?.role,
-        // Mark as assessment for frontend logic
         assessmentID: assessment.assessmentID
       });
     });
@@ -110,28 +107,27 @@ async function loadRecord(token){
         ...experience,
         refereeUsername: experience.referee?.username,
         refereeRole: experience.referee?.role,
-        // Mark as experience for frontend logic
         employee_experienceID: experience.employee_experienceID
       });
     });
 
-    // Sort by date (most recent first)
+    
     fullRecord.sort((a, b) => {
       const dateA = new Date(a.recordDate || 0);
       const dateB = new Date(b.recordDate || 0);
-      return dateB.getTime() - dateA.getTime(); // Descending order (most recent first)
+      return dateB.getTime() - dateA.getTime();
     });
 
     return {
       fullRecord
     };
   } catch (error) {
-    console.error('Error loading record:', error);
+    throw error;
     throw error;
   }
 }
 
-// GET / ENROLLED PATHWAYS LIST
+    
 async function enrolledPathwaysList(token){
   try {
     const employeeEmail = jwtDecode(token).email;
@@ -159,12 +155,12 @@ async function enrolledPathwaysList(token){
       enrolledPathways
     };
   } catch (error) {
-    console.error('Error loading enrolled pathways:', error);
+    throw error;
     throw error;
   }
 }
 
-// GET / PATHWAY DETAILS
+    
 async function myPathwayDetails(token){
   try {
     const employeeEmail = jwtDecode(token).email;
@@ -208,12 +204,12 @@ async function myPathwayDetails(token){
       myPathwayDetails
     };
   } catch (error) {
-    console.error('Error loading pathway details:', error);
+    throw error;
     throw error;
   }
 }
 
-// GET / RETURN LIST OF EMAILS TO REQUEST REFEREES
+    
 async function referees(){
   try {
     const referees = await prisma.employees.findMany({
@@ -237,12 +233,12 @@ async function referees(){
       refereesArray
     };
   } catch (error) {
-    console.error('Error loading referees:', error);
+    throw error;
     throw error;
   }
 }
 
-// // POST / REQUEST REFEREE
+    
 async function requestReferee(requestData, token){
   try {
     const employeeEmail = jwtDecode(token).email;
@@ -265,7 +261,7 @@ async function requestReferee(requestData, token){
       }
     }
 
-    // Referee can come through as ID or selected label/email depending on client control behavior.
+    
     const parsedRefereeId = parseInt(refereeRawValue, 10);
     if (!Number.isNaN(parsedRefereeId)) {
       refereeID = parsedRefereeId;
@@ -316,21 +312,18 @@ async function requestReferee(requestData, token){
     
     return result;
   } catch (error) {
-    console.error('Error requesting referee:', error);
+    throw error;
     throw error;
   }
 }
 
-// // POST / RECORD EXPERIENCE
+    
 async function recordExperience(experienceDate, experienceDuration, experienceDescription, experienceYourFeedback, experienceReferee, today, token){
   try {
-    console.log('recordExperience: Starting with params:', {
-      experienceDate, experienceDuration, experienceDescription, 
-      experienceYourFeedback, experienceReferee, today
-    });
+    
     
     const employeeEmail = jwtDecode(token).email;
-    console.log('recordExperience: Employee email from token:', employeeEmail);
+    
     
     const employee = await prisma.employees.findFirst({
       where: { email: employeeEmail },
@@ -338,46 +331,41 @@ async function recordExperience(experienceDate, experienceDuration, experienceDe
     });
     
     if (!employee) {
-      console.log('recordExperience: Employee not found for email:', employeeEmail);
       throw new Error('Employee not found');
     }
     
-    console.log('recordExperience: Found employee:', employee);
+    
     
     let experienceData = {
       experienceDescription: experienceDescription,
       duration: parseFloat(experienceDuration),
-      recordDate: today, // Use string directly as defined in schema
+      recordDate: today,
       employeeID: employee.employeeID
     };
     
-    console.log('recordExperience: Initial experience data:', experienceData);
+    
     
     if (experienceYourFeedback && experienceYourFeedback !== "") {
       experienceData.employeeText = experienceYourFeedback;
-      console.log('recordExperience: Added employee feedback');
     }
     
     if (experienceReferee && experienceReferee !== "") {
       experienceData.refereeID = parseInt(experienceReferee);
-      console.log('recordExperience: Added referee ID:', experienceData.refereeID);
     }
     
-    console.log('recordExperience: Final experience data:', experienceData);
+    
     
     const result = await prisma.employees_experiences.create({
       data: experienceData
     });
-    
-    console.log('recordExperience: Successfully created experience:', result);
     return result;
   } catch (error) {
-    console.error('Error recording experience:', error);
+    throw error;
     throw error;
   }
 }
 
-// // POST / RECORD OWN FEEDBACK
+    
 async function recordOwnFeedback(recordOwnFeedback, experienceID, experienceReferee, token){
   try {
     const employeeEmail = jwtDecode(token).email;
@@ -412,7 +400,7 @@ async function recordOwnFeedback(recordOwnFeedback, experienceID, experienceRefe
     
     return result;
   } catch (error) {
-    console.error('Error recording own feedback:', error);
+    throw error;
     throw error;
   }
 }

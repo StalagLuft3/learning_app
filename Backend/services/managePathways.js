@@ -25,7 +25,7 @@ async function getPathwaysList(token){
       pathwaysList
     };
   } catch (error) {
-    console.error('Error loading pathways list:', error);
+    throw error;
     throw error;
   }
 }
@@ -33,7 +33,7 @@ async function getPathwaysList(token){
 // GET MANAGED PATHWAYS WITH ENROLLMENTS AND CALCULATED COMPLETION STATUS
 async function getManagedPathways(managerId) {
   try {
-    console.log('getManagedPathways called with managerId:', managerId);
+    
     
     const pathways = await prisma.pathways.findMany({
       where: {
@@ -79,11 +79,11 @@ async function getManagedPathways(managerId) {
       }
     });
 
-    console.log(`Found ${pathways.length} pathways`);
+    
 
     // Calculate completion status for each pathway enrollment
     const transformedPathways = await Promise.all(pathways.map(async pathway => {
-      console.log(`Processing pathway ${pathway.pathwayName} with ${pathway.pathways_employees.length} enrollments`);
+      
       
       const enrollmentsWithProgress = await Promise.all(pathway.pathways_employees.map(async enrollment => {
         const employeeId = enrollment.employeeID;
@@ -94,7 +94,7 @@ async function getManagedPathways(managerId) {
         const totalExperienceTemplates = pathway.pathways_experience_templates.length;
         const totalComponents = totalCourses + totalAssessments + totalExperienceTemplates;
         
-        console.log(`Employee ${enrollment.employees.username}: ${totalCourses} courses, ${totalAssessments} assessments, ${totalExperienceTemplates} experiences = ${totalComponents} total components`);
+        
         
         let completedComponents = 0;
         let totalDuration = 0;
@@ -165,7 +165,7 @@ async function getManagedPathways(managerId) {
         const isCompleted = totalComponents > 0 && completedComponents === totalComponents;
         const completionPercentage = totalDuration > 0 ? Math.round((completedDuration / totalDuration) * 100) : 0;
         
-        console.log(`${enrollment.employees.username}: ${completedComponents}/${totalComponents} components, ${completedDuration}h/${totalDuration}h (${completionPercentage}%), status: ${isCompleted ? 'Completed' : 'In Progress'}`);
+        
         
         return {
           pathway_employeeID: enrollment.pathway_employeeID,
@@ -199,7 +199,7 @@ async function getManagedPathways(managerId) {
 
     return { pathways: transformedPathways };
   } catch (error) {
-    console.error('Error loading managed pathways:', error);
+    throw error;
     throw error;
   }
 }
@@ -227,7 +227,7 @@ async function updatePathway(pathwayID, updateData) {
 
     return result;
   } catch (error) {
-    console.error('Error updating pathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -352,7 +352,7 @@ async function updatePathwayEnrollment(enrollmentId, updateData, token) {
 
     return result;
   } catch (error) {
-    console.error('Error updating pathway enrollment:', error);
+    throw error;
     throw error;
   }
 }
@@ -406,7 +406,7 @@ async function getAvailableCourses(pathwayID, token) {
 
     return availableCourses;
   } catch (error) {
-    console.error('Error loading available courses:', error);
+    throw error;
     throw error;
   }
 }
@@ -460,7 +460,7 @@ async function getAvailableAssessments(pathwayID, token) {
 
     return availableAssessments;
   } catch (error) {
-    console.error('Error loading available assessments:', error);
+    throw error;
     throw error;
   }
 }
@@ -495,7 +495,7 @@ async function getAvailableExperienceTemplates(pathwayID, token) {
 
     return availableTemplates;
   } catch (error) {
-    console.error('Error loading available experience templates:', error);
+    throw error;
     throw error;
   }
 }
@@ -548,7 +548,7 @@ async function getAvailablePathways(currentPathwayID, token) {
 
     return availablePathways;
   } catch (error) {
-    console.error('Error loading available pathways:', error);
+    throw error;
     throw error;
   }
 }
@@ -639,7 +639,7 @@ async function addCourseToPathway(pathwayID, courseID, token) {
 
     return result;
   } catch (error) {
-    console.error('Error adding course to pathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -690,7 +690,7 @@ async function removeCourseFromPathway(pathwayID, courseID, token) {
 
     return result;
   } catch (error) {
-    console.error('Error removing course from pathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -781,7 +781,7 @@ async function addAssessmentToPathway(pathwayID, assessmentID, token) {
 
     return result;
   } catch (error) {
-    console.error('Error adding assessment to pathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -832,7 +832,7 @@ async function removeAssessmentFromPathway(pathwayID, assessmentID, token) {
 
     return result;
   } catch (error) {
-    console.error('Error removing assessment from pathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -928,7 +928,7 @@ async function addExperienceTemplateToPathway(pathwayID, templateID, token) {
 
     return result;
   } catch (error) {
-    console.error('Error adding experience template to pathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -979,7 +979,7 @@ async function removeExperienceTemplateFromPathway(pathwayID, templateID, token)
 
     return result;
   } catch (error) {
-    console.error('Error removing experience template from pathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -1049,7 +1049,7 @@ async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
       } catch (error) {
         // Skip if already exists
         if (!error.message.includes('already part of')) {
-          console.error('Error copying course:', error);
+          throw error;
         }
       }
     }
@@ -1063,7 +1063,7 @@ async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
       } catch (error) {
         // Skip if already exists
         if (!error.message.includes('already part of')) {
-          console.error('Error copying assessment:', error);
+          throw error;
         }
       }
     }
@@ -1077,7 +1077,7 @@ async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
       } catch (error) {
         // Skip if already exists
         if (!error.message.includes('already part of')) {
-          console.error('Error copying experience template:', error);
+          throw error;
         }
       }
     }
@@ -1089,7 +1089,7 @@ async function copyPathwayContents(targetPathwayID, sourcePathwayID, token) {
       totalSourceItems: sourceCourses.length + sourceAssessments.length + sourceTemplates.length
     };
   } catch (error) {
-    console.error('Error copying pathway contents:', error);
+    throw error;
     throw error;
   }
 }
@@ -1105,7 +1105,7 @@ async function getAllExperienceTemplates(token) {
 
     return templates;
   } catch (error) {
-    console.error('Error loading experience templates:', error);
+    throw error;
     throw error;
   }
 }
@@ -1124,7 +1124,7 @@ async function createExperienceTemplate(templateData, token) {
 
     return result;
   } catch (error) {
-    console.error('Error creating experience template:', error);
+    throw error;
     throw error;
   }
 }
@@ -1164,7 +1164,7 @@ async function createExperienceTemplateForPathway(pathwayId, templateData, token
       pathwayAssociation: pathwayTemplate
     };
   } catch (error) {
-    console.error('Error in createExperienceTemplateForPathway:', error);
+    throw error;
     throw new Error('Failed to create experience template for pathway: ' + error.message);
   }
 }
@@ -1191,7 +1191,7 @@ async function updateExperienceTemplate(templateID, updateData, token) {
 
     return result;
   } catch (error) {
-    console.error('Error updating experience template:', error);
+    throw error;
     throw error;
   }
 }
@@ -1232,7 +1232,7 @@ async function deleteExperienceTemplate(templateID, token) {
 
     return result;
   } catch (error) {
-    console.error('Error deleting experience template:', error);
+    throw error;
     throw error;
   }
 }

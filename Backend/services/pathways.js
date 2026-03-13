@@ -68,7 +68,7 @@ async function loadPathways(token) {
     );
 
     // Get all pathways with manager information
-    console.log('Fetching all pathways...');
+    
     const pathwaysList = await prisma.pathways.findMany({
       include: {
         manager: {
@@ -76,8 +76,8 @@ async function loadPathways(token) {
         }
       }
     });
-    console.log('Found pathways:', pathwaysList.length);
-    console.log('Pathways data:', JSON.stringify(pathwaysList, null, 2));
+    
+    
 
     // Get pathway courses
     const allPathwaysCourses = await prisma.pathways_courses.findMany({
@@ -194,7 +194,7 @@ async function loadPathways(token) {
       isPathwayManagerList: isPathwayManagerList.map(p => p.pathwayID)
     };
   } catch (error) {
-    console.error('Error in loadPathways:', error);
+    throw error;
     throw error;
   }
 }
@@ -235,14 +235,14 @@ async function enrolPathway(enrolPathwayID, token, enrolDate) {
       }
     });
     
-    console.log('Pathway enrollment successful:', result);
+    
     
     // Auto-enroll in associated courses, assessments, and experience templates
     await handleAutoEnrollment(enrolPathwayID, employee.employeeID, enrolDate);
     
     return result;
   } catch (error) {
-    console.error('Error in enrolPathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -302,7 +302,7 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
             score: null
           }
         });
-        console.log(`Refreshed expired course enrollment for employee ${employeeID} on course ${pathwayCourse.courseID}`);
+        
       } else {
         await prisma.employees_courses.create({
           data: {
@@ -312,7 +312,7 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
             recordDate: enrolDate
           }
         });
-        console.log(`Auto-enrolled employee ${employeeID} in course ${pathwayCourse.courseID}`);
+        
       }
     }
     
@@ -350,7 +350,7 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
             score: null
           }
         });
-        console.log(`Refreshed expired assessment enrollment for employee ${employeeID} on assessment ${pathwayAssessment.assessmentID}`);
+        
       } else {
         await prisma.employees_assessments.create({
           data: {
@@ -360,7 +360,7 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
             recordDate: enrolDate
           }
         });
-        console.log(`Auto-enrolled employee ${employeeID} in assessment ${pathwayAssessment.assessmentID}`);
+        
       }
     }
     
@@ -388,12 +388,12 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
               employeeID: employeeID
             }
           });
-          console.log(`Auto-enrolled employee ${employeeID} in experience template ${pathwayExperienceTemplate.experience_templateID}`);
+          
         }
       }
     }
   } catch (error) {
-    console.error('Error in handleAutoEnrollment:', error);
+    throw error;
     // Don't throw here - we don't want to fail the entire enrollment if auto-enrollment has issues
   }
 }
@@ -401,8 +401,8 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
 //POST / CREATE PATHWAY
 async function createPathway(pathwayName, pathwayDescription, token) {
   try {
-    console.log('createPathway service: Starting pathway creation');
-    console.log('Token received (first 20 chars):', token ? token.substring(0, 20) + '...' : 'null');
+    
+    
     
     if (!token) {
       throw new Error('No token provided');
@@ -411,9 +411,9 @@ async function createPathway(pathwayName, pathwayDescription, token) {
     let decodedToken;
     try {
       decodedToken = jwtDecode(token);
-      console.log('Token decoded successfully, email:', decodedToken.email);
+      
     } catch (jwtError) {
-      console.error('JWT decode error:', jwtError);
+      throw jwtError;
       throw new Error('Invalid token format');
     }
     
@@ -423,19 +423,19 @@ async function createPathway(pathwayName, pathwayDescription, token) {
       throw new Error('No email found in token');
     }
     
-    console.log('Looking up employee with email:', employeeEmail);
+    
     const employee = await prisma.employees.findFirst({
       where: { email: employeeEmail },
       select: { employeeID: true }
     });
     
     if (!employee) {
-      console.error('Employee not found for email:', employeeEmail);
+      throw new Error('Employee not found');
       throw new Error('Employee not found');
     }
     
-    console.log('Employee found, ID:', employee.employeeID);
-    console.log('Creating pathway with name:', pathwayName);
+    
+    
     
     const result = await prisma.pathways.create({
       data: {
@@ -445,11 +445,10 @@ async function createPathway(pathwayName, pathwayDescription, token) {
       }
     });
     
-    console.log('Pathway created successfully:', result);
+    
     return result;
   } catch (error) {
-    console.error('Error in createPathway service:', error);
-    console.error('Error stack:', error.stack);
+    throw error;
     throw error;
   }
 }
@@ -457,8 +456,8 @@ async function createPathway(pathwayName, pathwayDescription, token) {
 // UPDATE PATHWAY
 async function updatePathway(pathwayID, updateData, token) {
   try {
-    console.log('updatePathway: Updating pathway ID:', pathwayID);
-    console.log('updatePathway: Update data:', updateData);
+    
+    
     
     const employeeEmail = jwtDecode(token).email;
     
@@ -491,10 +490,10 @@ async function updatePathway(pathwayID, updateData, token) {
       data: updateData
     });
     
-    console.log('updatePathway: Pathway updated successfully');
+    
     return updatedPathway;
   } catch (error) {
-    console.error('Error updating pathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -502,7 +501,7 @@ async function updatePathway(pathwayID, updateData, token) {
 // DELETE PATHWAY
 async function deletePathway(pathwayID, token) {
   try {
-    console.log('deletePathway: Deleting pathway ID:', pathwayID);
+    
     
     const employeeEmail = jwtDecode(token).email;
     
@@ -612,10 +611,10 @@ async function deletePathway(pathwayID, token) {
       });
     });
     
-    console.log('deletePathway: Pathway deleted successfully');
+    
     return deletedPathway;
   } catch (error) {
-    console.error('Error deleting pathway:', error);
+    throw error;
     throw error;
   }
 }

@@ -53,7 +53,7 @@ async function getManagedCourses(managerId) {
       courses: flattenedCourses
     };
   } catch (error) {
-    console.error('Error loading managed courses:', error);
+    throw error;
     throw error;
   }
 }
@@ -89,7 +89,7 @@ async function updateCourseEnrollment(enrollmentId, updateData) {
 
     return result;
   } catch (error) {
-    console.error('Error updating course enrollment:', error);
+    throw error;
     throw error;
   }
 }
@@ -133,7 +133,7 @@ async function updateCourse(courseID, updateData) {
 
     return result;
   } catch (error) {
-    console.error('Error updating course:', error);
+    throw error;
     throw error;
   }
 }

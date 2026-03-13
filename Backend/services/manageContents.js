@@ -25,7 +25,7 @@ async function getPathwaysList(token){
       pathwaysList
     };
   } catch (error) {
-    console.error('Error loading pathways list:', error);
+    throw error;
     throw error;
   }
 }
@@ -33,7 +33,7 @@ async function getPathwaysList(token){
 // GET MANAGED PATHWAYS WITH ENROLLMENTS AND CALCULATED COMPLETION STATUS
 async function getManagedPathways(managerId) {
   try {
-    console.log('getManagedPathways called with managerId:', managerId);
+    
     
     const pathways = await prisma.pathways.findMany({
       where: {
@@ -79,11 +79,11 @@ async function getManagedPathways(managerId) {
       }
     });
 
-    console.log(`Found ${pathways.length} pathways`);
+    
 
     // Calculate completion status for each pathway enrollment
     const transformedPathways = await Promise.all(pathways.map(async pathway => {
-      console.log(`Processing pathway ${pathway.pathwayName} with ${pathway.pathways_employees.length} enrollments`);
+      
       
       const enrollmentsWithProgress = await Promise.all(pathway.pathways_employees.map(async enrollment => {
         const employeeId = enrollment.employeeID;
@@ -163,7 +163,7 @@ async function getManagedPathways(managerId) {
         const isCompleted = totalComponents > 0 && completedComponents === totalComponents;
         const completionPercentage = totalDuration > 0 ? Math.round((completedDuration / totalDuration) * 100) : 0;
         
-        console.log(`${enrollment.employees.username}: ${completedComponents}/${totalComponents} components, ${completedDuration}h/${totalDuration}h (${completionPercentage}%), status: ${isCompleted ? 'Completed' : 'In Progress'}`);
+        
         
         return {
           pathway_employeeID: enrollment.pathway_employeeID,
@@ -199,7 +199,7 @@ async function getManagedPathways(managerId) {
 
     return { pathways: transformedPathways };
   } catch (error) {
-    console.error('Error loading managed pathways:', error);
+    throw error;
     throw error;
   }
 }
@@ -228,7 +228,7 @@ async function updatePathway(pathwayID, updateData) {
 
     return result;
   } catch (error) {
-    console.error('Error updating pathway:', error);
+    throw error;
     throw error;
   }
 }
@@ -280,7 +280,7 @@ async function getAvailableCourses(pathwayID, token) {
 
     return { courses: availableCourses };
   } catch (error) {
-    console.error('Error loading available courses:', error);
+    throw error;
     throw error;
   }
 }
@@ -327,7 +327,7 @@ async function getAvailableAssessments(pathwayID, token) {
 
     return { assessments: availableAssessments };
   } catch (error) {
-    console.error('Error loading available assessments:', error);
+    throw error;
     throw error;
   }
 }
@@ -363,7 +363,7 @@ async function getAvailableExperienceTemplates(pathwayID, token) {
 
     return { experienceTemplates: availableExperienceTemplates };
   } catch (error) {
-    console.error('Error loading available experience templates:', error);
+    throw error;
     throw error;
   }
 }
@@ -401,7 +401,7 @@ async function getAvailableAssessments(pathwayID, token) {
 
     // This block is replaced by the previous replacement
   } catch (error) {
-    console.error('Error loading available assessments:', error);
+    throw error;
     throw error;
   }
 }
@@ -438,7 +438,7 @@ async function getAvailableExperienceTemplates(pathwayID, token) {
 
     return { experienceTemplates: templatesWithStatus };
   } catch (error) {
-    console.error('Error loading available experience templates:', error);
+    throw error;
     throw error;
   }
 }
@@ -490,7 +490,7 @@ async function getAvailablePathways(currentPathwayID, token) {
 
     return { pathways: pathwaysWithCounts };
   } catch (error) {
-    console.error('Error loading available pathways:', error);
+    throw error;
     throw error;
   }
 }
