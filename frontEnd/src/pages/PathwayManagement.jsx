@@ -952,7 +952,83 @@ const PathwayManagement = () => {
           secondaryHeading="No pathways to manage"
           secondarySubheading="You are not currently assigned as a manager for any pathways."
           aligned="full-width"
-        />
+        >
+          <IcButton
+            slot="interaction"
+            variant="primary"
+            onClick={openCreatePathwayDialog}
+          >
+            <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
+            Create Pathway
+          </IcButton>
+        </IcHero>
+
+        {alertVisible && (
+          <IcAlert
+            variant={alertType}
+            heading={alertType === 'success' ? 'Success' : 'Error'}
+            message={alertMessage}
+            dismissible={true}
+            onIcDismiss={() => setAlertVisible(false)}
+            style={{ margin: '16px', marginBottom: '24px' }}
+          />
+        )}
+
+        <IcDialog
+          size="large"
+          open={createPathwayDialogOpen}
+          closeOnBackdropClick={false}
+          heading="Create a New Pathway"
+          hideDefaultControls="true"
+          buttons="false"
+          onIcDialogClosed={closeCreatePathwayDialog}
+        >
+          <IcTextField
+            value={createPathwayFormData.pathwayName}
+            onIcInput={(e) => handleCreatePathwayFieldChange('pathwayName', e.detail.value)}
+            label="Pathway Name"
+            type="text"
+            minCharacters={4}
+            maxCharcters={64}
+            fullWidth="full-width"
+            required
+            style={{ marginBottom: '16px' }}
+          />
+          <IcTextField
+            value={createPathwayFormData.pathwayDescription}
+            onIcInput={(e) => handleCreatePathwayFieldChange('pathwayDescription', e.detail.value)}
+            label="Pathway Description"
+            rows={3}
+            type="text"
+            minCharacters={16}
+            maxCharcters={256}
+            fullWidth="full-width"
+            required
+            style={{ marginBottom: '24px' }}
+          />
+
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
+            <IcButton
+              variant="tertiary"
+              onClick={closeCreatePathwayDialog}
+              disabled={submitting}
+            >
+              Cancel
+            </IcButton>
+            <IcButton
+              variant="primary"
+              onClick={handleCreatePathway}
+              disabled={
+                submitting ||
+                createPathwayFormData.pathwayName.trim().length < 4 ||
+                createPathwayFormData.pathwayDescription.trim().length < 16
+              }
+            >
+              <SlottedSVGTemplate mdiIcon={mdiNavigationVariantOutline} />
+              Create Pathway
+            </IcButton>
+          </div>
+        </IcDialog>
         <Footer />
       </>
     );

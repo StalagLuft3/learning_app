@@ -31,6 +31,42 @@ async function loadPathways(token) {
       distinct: ['pathwayID']
     });
 
+    // Get current user's active enrollments for overlap-based pathway progress.
+    const userCourseEnrollments = await prisma.employees_courses.findMany({
+      where: {
+        employeeID: employee.employeeID,
+        NOT: { currentStatus: { in: ['Withdrawn', 'Expired'] } }
+      },
+      select: { courseID: true },
+      distinct: ['courseID']
+    });
+
+    const userAssessmentEnrollments = await prisma.employees_assessments.findMany({
+      where: {
+        employeeID: employee.employeeID,
+        NOT: { currentStatus: { in: ['Withdrawn', 'Expired'] } }
+      },
+      select: { assessmentID: true },
+      distinct: ['assessmentID']
+    });
+
+    const userExperienceEnrollments = await prisma.employees_experiences.findMany({
+      where: {
+        employeeID: employee.employeeID,
+        experience_templateID: { not: null }
+      },
+      select: { experience_templateID: true },
+      distinct: ['experience_templateID']
+    });
+
+    const userCourseIds = new Set(userCourseEnrollments.map((row) => row.courseID));
+    const userAssessmentIds = new Set(userAssessmentEnrollments.map((row) => row.assessmentID));
+    const userExperienceTemplateIds = new Set(
+      userExperienceEnrollments
+        .map((row) => row.experience_templateID)
+        .filter((id) => id !== null)
+    );
+
     // Get all pathways with manager information
     console.log('Fetching all pathways...');
     const pathwaysList = await prisma.pathways.findMany({
@@ -92,11 +128,67 @@ async function loadPathways(token) {
       return nameA.localeCompare(nameB);
     });
 
+    // Build per-pathway overlap progress for recommendation and card display.
+    const pathwayCoursesById = allPathwaysCourses.reduce((acc, row) => {
+      if (!row.pathwayID) return acc;
+      if (!acc[row.pathwayID]) acc[row.pathwayID] = [];
+      acc[row.pathwayID].push(row.courseID);
+      return acc;
+    }, {});
+
+    const pathwayAssessmentsById = allPathwaysAssessments.reduce((acc, row) => {
+      if (!row.pathwayID) return acc;
+      if (!acc[row.pathwayID]) acc[row.pathwayID] = [];
+      acc[row.pathwayID].push(row.assessmentID);
+      return acc;
+    }, {});
+
+    const pathwayExperiencesById = allPathwaysExperienceTemplates.reduce((acc, row) => {
+      if (!row.pathwayID) return acc;
+      if (!acc[row.pathwayID]) acc[row.pathwayID] = [];
+      acc[row.pathwayID].push(row.experience_templateID);
+      return acc;
+    }, {});
+
+    const enrolledPathwaySet = new Set(isEnrolledOnPathwayList.map((p) => p.pathwayID));
+
+    const pathwayProgress = pathwaysList.map((pathway) => {
+      const pathwayCourseIds = pathwayCoursesById[pathway.pathwayID] || [];
+      const pathwayAssessmentIds = pathwayAssessmentsById[pathway.pathwayID] || [];
+      const pathwayExperienceIds = pathwayExperiencesById[pathway.pathwayID] || [];
+
+      const totalItems =
+        pathwayCourseIds.length +
+        pathwayAssessmentIds.length +
+        pathwayExperienceIds.length;
+
+      const matchedCourses = pathwayCourseIds.filter((id) => userCourseIds.has(id)).length;
+      const matchedAssessments = pathwayAssessmentIds.filter((id) => userAssessmentIds.has(id)).length;
+      const matchedExperiences = pathwayExperienceIds.filter((id) => userExperienceTemplateIds.has(id)).length;
+      const matchedItems = matchedCourses + matchedAssessments + matchedExperiences;
+
+      const completionPercent = totalItems > 0
+        ? Math.round((matchedItems / totalItems) * 100)
+        : 0;
+
+      return {
+        pathwayID: pathway.pathwayID,
+        totalItems,
+        matchedItems,
+        completionPercent,
+        matchedCourses,
+        matchedAssessments,
+        matchedExperiences,
+        isEnrolled: enrolledPathwaySet.has(pathway.pathwayID)
+      };
+    });
+
     const user = [employeeEmail, employee];
     
     return {
       pathwaysList,
       contents,
+      pathwayProgress,
       user,
       isEnrolledOnPathwayList: isEnrolledOnPathwayList.map(p => p.pathwayID),
       isPathwayManagerList: isPathwayManagerList.map(p => p.pathwayID)

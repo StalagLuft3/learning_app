@@ -16,6 +16,7 @@ function Pathways() {
   
   const [pathwaysList, setPathwaysList] = useState([]);
   const [contents, setContents] = useState([]);
+  const [pathwayProgress, setPathwayProgress] = useState([]);
   const [user, setUser] = useState([]);
   const [isEnrolledOnPathwayList, setIsEnrolledOnPathwayList] = useState([]);
   const [isPathwayManagerList, setIsPathwayManagerList] = useState([]);
@@ -30,10 +31,11 @@ function Pathways() {
       .then((data) => {
         console.log('Pathways data loaded:', data);
         if (data) {
-          const { pathwaysList, contents, user, isEnrolledOnPathwayList, isPathwayManagerList } = data;
+          const { pathwaysList, contents, pathwayProgress, user, isEnrolledOnPathwayList, isPathwayManagerList } = data;
           console.log('Pathways list:', pathwaysList);
           setPathwaysList(pathwaysList || []);
           setContents(contents || []);
+          setPathwayProgress(pathwayProgress || []);
           setUser(user || []);
           setIsEnrolledOnPathwayList(isEnrolledOnPathwayList || []);
           setIsPathwayManagerList(isPathwayManagerList || []);
@@ -46,6 +48,7 @@ function Pathways() {
         // Set default values on error
         setPathwaysList([]);
         setContents([]);
+        setPathwayProgress([]);
         setUser([]);
         setIsEnrolledOnPathwayList([]);
         setIsPathwayManagerList([]);
@@ -113,6 +116,29 @@ function Pathways() {
     return titleMatch || descriptionMatch || managerMatch || contentMatch;
   });
 
+  const pathwayProgressById = Array.isArray(pathwayProgress)
+    ? pathwayProgress.reduce((acc, item) => {
+        acc[item.pathwayID] = item;
+        return acc;
+      }, {})
+    : {};
+
+  const recommendedPathways = (pathwaysList || [])
+    .filter((pathway) => {
+      const progress = pathwayProgressById[pathway.pathwayID];
+      return (
+        !isEnrolledOnPathwayList.includes(pathway.pathwayID) &&
+        progress &&
+        progress.completionPercent > 0
+      );
+    })
+    .sort((a, b) => {
+      const progressA = pathwayProgressById[a.pathwayID]?.completionPercent || 0;
+      const progressB = pathwayProgressById[b.pathwayID]?.completionPercent || 0;
+      return progressB - progressA;
+    })
+    .slice(0, 5);
+
   const handleEnrollPathway = async (pathwayID) => {
     try {
       console.log('Enrolling in pathway:', pathwayID);
@@ -147,6 +173,7 @@ function Pathways() {
           if (data) {
             setPathwaysList(data.pathwaysList || []);
             setContents(data.contents || []);
+            setPathwayProgress(data.pathwayProgress || []);
             setUser(data.user || []);
             setIsEnrolledOnPathwayList(data.isEnrolledOnPathwayList || []);
             setIsPathwayManagerList(data.isPathwayManagerList || []);
@@ -206,6 +233,37 @@ function Pathways() {
           style={{ margin: '16px', marginBottom: '24px' }}
         />
       )}
+
+      {recommendedPathways.length > 0 && (
+        <div style={{ margin: '16px' }}>
+          <IcSectionContainer type="full-width">
+            <h3 style={{ marginBottom: '12px' }}>Recommended Pathways Based On Your Existing Overlap</h3>
+            {recommendedPathways.map((pathway) => {
+              const progress = pathwayProgressById[pathway.pathwayID];
+              return (
+                <IcCardVertical
+                  key={`recommendation-${pathway.pathwayID}`}
+                  style={cardContainer}
+                  heading={pathway.pathwayName}
+                  subheading={`You already have ${progress?.completionPercent || 0}% pathway overlap`}
+                  message={`${progress?.matchedItems || 0} of ${progress?.totalItems || 0} pathway items are already on your record`}
+                >
+                  <IcStatusTag
+                    status="neutral"
+                    label={`${progress?.completionPercent || 0}% overlap`}
+                    variant="filled"
+                    slot="adornment"
+                    size="small"
+                  />
+                  <div slot="interaction-controls">
+                    <IcButton variant="primary" onClick={() => handleEnrollPathway(pathway.pathwayID)}>Enrol</IcButton>
+                  </div>
+                </IcCardVertical>
+              );
+            })}
+          </IcSectionContainer>
+        </div>
+      )}
       
       <div>
         <div>
@@ -216,13 +274,23 @@ function Pathways() {
                 <IcSectionContainer>
                   {(() => {
                     const totals = getPathwayTotals(pl.pathwayID);
+                    const isEnrolled = isEnrolledOnPathwayList.includes(pl.pathwayID);
+                    const progress = pathwayProgressById[pl.pathwayID] || {
+                      completionPercent: 0,
+                      matchedItems: 0,
+                      totalItems: totals.totalItems
+                    };
+                    const totalItemsForPathway = progress.totalItems || totals.totalItems;
+                    const overlapPrefix = isEnrolled
+                      ? `You are enrolled on this pathway (${progress.completionPercent}% overlap)`
+                      : `You already have ${progress.completionPercent}% pathway overlap`;
                     return (
                   <div>
                     <IcCardVertical 
                       style={cardContainer}
                       heading={pl.pathwayDescription}
                       subheading={"Pathway Manager: " + (pl.manager ? pl.manager.username : 'Unknown')}
-                      message={`Total items: ${totals.totalItems} | Total duration: ${totals.totalDuration} day(s)`}
+                      message={`${overlapPrefix} (${progress.matchedItems}/${totalItemsForPathway} items) | Total duration: ${totals.totalDuration} day(s)`}
                     >
                       {(() => {
                         if (isEnrolledOnPathwayList.includes(pl.pathwayID) === true) {
