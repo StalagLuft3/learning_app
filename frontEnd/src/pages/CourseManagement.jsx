@@ -141,11 +141,23 @@ const CourseManagement = () => {
       setSubmitting(true);
       
       const formData = courseFormData[courseID];
+      const parsedDuration = Number(formData.duration);
+      const isQuarterHourDayIncrement = Number.isFinite(parsedDuration) && Math.abs((parsedDuration * 8) - Math.round(parsedDuration * 8)) < 1e-9;
+      if (!Number.isFinite(parsedDuration) || parsedDuration < 0.125 || !isQuarterHourDayIncrement) {
+        setAlertMessage('Course duration must be in 0.125 day increments (minimum 0.125).');
+        setAlertType('warning');
+        setAlertVisible(true);
+        setTimeout(() => {
+          setAlertVisible(false);
+        }, 5000);
+        return;
+      }
+
       const updateData = {
         courseID,
         courseName: formData.courseName,
         description: formData.description,
-        duration: parseInt(formData.duration) || 0,
+        duration: parsedDuration,
         deliveryMethod: formData.deliveryMethod,
         deliveryLocation: formData.deliveryLocation
       };
@@ -226,12 +238,24 @@ const CourseManagement = () => {
     
     try {
       setSubmitting(true);
+
+      const parsedDuration = Number(editFormData.duration);
+      const isQuarterHourDayIncrement = Number.isFinite(parsedDuration) && Math.abs((parsedDuration * 8) - Math.round(parsedDuration * 8)) < 1e-9;
+      if (!Number.isFinite(parsedDuration) || parsedDuration < 0.125 || !isQuarterHourDayIncrement) {
+        setAlertMessage('Course duration must be in 0.125 day increments (minimum 0.125).');
+        setAlertType('warning');
+        setAlertVisible(true);
+        setTimeout(() => {
+          setAlertVisible(false);
+        }, 5000);
+        return;
+      }
       
       const updateData = {
         courseID: selectedCourse.courseID,
         courseName: editFormData.courseName,
         description: editFormData.description,
-        duration: parseInt(editFormData.duration) || 0,
+        duration: parsedDuration,
         deliveryMethod: editFormData.delivery_method,
         deliveryLocation: editFormData.delivery_location
       };
@@ -842,6 +866,7 @@ const CourseManagement = () => {
             placeholder="Insert number of days in increments of 0.125" 
             type="number" 
             min="0.125" 
+            step="0.125"
             fullWidth="full-width" 
             helperText="Increments of 0.125 Days (1 hour)" 
             required 
@@ -851,7 +876,8 @@ const CourseManagement = () => {
             label="Delivery Method" 
             required
             value={editFormData.delivery_method || ''}
-            onIcChange={(e) => handleFormChange('delivery_method', e.detail.value)}
+            onIcChange={(e) => handleFormChange('delivery_method', e?.detail?.value || e?.target?.value || '')}
+            style={{ position: 'relative', zIndex: 30 }}
             options={[
               { label: 'In-Person', value: 'In-Person' },
               { label: 'Virtual', value: 'Virtual' },
@@ -863,7 +889,8 @@ const CourseManagement = () => {
             label="Delivery Location" 
             required
             value={editFormData.delivery_location || ''}
-            onIcChange={(e) => handleFormChange('delivery_location', e.detail.value)}
+            onIcChange={(e) => handleFormChange('delivery_location', e?.detail?.value || e?.target?.value || '')}
+            style={{ position: 'relative', zIndex: 20 }}
             options={[
               { label: 'High', value: 'High' },
               { label: 'Low', value: 'Low' }
@@ -942,7 +969,7 @@ const CourseManagement = () => {
           />
           <IcSelect
             value={createFormData.deliveryMethod || ''}
-            onIcChange={(e) => handleCreateFormChange('deliveryMethod', e.detail.value)}
+            onIcChange={(e) => handleCreateFormChange('deliveryMethod', e?.detail?.value || e?.target?.value || '')}
             label="Delivery Method"
             fullWidth="full-width"
             options={[
@@ -954,7 +981,7 @@ const CourseManagement = () => {
           />
           <IcSelect
             value={createFormData.deliveryLocation || ''}
-            onIcChange={(e) => handleCreateFormChange('deliveryLocation', e.detail.value)}
+            onIcChange={(e) => handleCreateFormChange('deliveryLocation', e?.detail?.value || e?.target?.value || '')}
             label="Delivery Location"
             fullWidth="full-width"
             options={[

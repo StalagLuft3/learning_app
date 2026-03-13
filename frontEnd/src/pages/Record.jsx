@@ -47,6 +47,8 @@ function Record() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('success');
+  const [selectedFeedbackReferee, setSelectedFeedbackReferee] = useState('');
+  const [selectedRefereeByExperience, setSelectedRefereeByExperience] = useState({});
   
 
   useEffect(() => {
@@ -192,9 +194,12 @@ function Record() {
       setSubmittingFeedback(true);
       
       const formData = new FormData(event.target);
+      const selectedRefereeFromControl = event.target.querySelector('ic-select[name="experienceReferee"]')?.value;
+      const selectedReferee = selectedRefereeFromControl || selectedFeedbackReferee || '';
       const feedbackData = {
         recordOwnFeedback: formData.get('recordOwnFeedback'),
-        experienceID: selectedExperienceID
+        experienceID: selectedExperienceID,
+        experienceReferee: selectedReferee || null
       };
       
       console.log('Submitting feedback data:', feedbackData);
@@ -219,6 +224,7 @@ function Record() {
           setAlertVisible(false);
         }, 3000);
         closeDialog("recordOwnFeedback");
+        setSelectedFeedbackReferee('');
         // Refresh the record data to show the updated feedback
         const { fullRecord } = await fetchData("/record");
         setFullRecord(fullRecord);
@@ -244,6 +250,58 @@ function Record() {
       }, 5000);
     } finally {
       setSubmittingFeedback(false);
+    }
+  };
+
+  const handleRequestReferee = async (experienceId) => {
+    try {
+      const selectedReferee = selectedRefereeByExperience[experienceId];
+
+      if (!selectedReferee) {
+        setAlertMessage('Please select a referee before submitting your request.');
+        setAlertType('error');
+        setAlertVisible(true);
+        setTimeout(() => {
+          setAlertVisible(false);
+        }, 5000);
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/Record/requestReferee', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          refereeID: selectedReferee,
+          experienceID: experienceId
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to request referee');
+      }
+
+      setAlertMessage('Referee requested successfully.');
+      setAlertType('success');
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 3000);
+
+      const { fullRecord } = await fetchData('/record');
+      setFullRecord(fullRecord);
+    } catch (error) {
+      console.error('Failed to request referee:', error);
+      setAlertMessage(`Failed to request referee: ${error.message || 'Please try again.'}`);
+      setAlertType('error');
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 5000);
     }
   };
 
@@ -557,6 +615,10 @@ function Record() {
           const refereeUsername = d.refereeUsername || "Select Referee"
           const refereeText = d.refereeText || "Awaiting Referee's feedback"
           const experinceID = d.employee_experienceID
+          const hasEmployeeFeedback = Boolean(d.employeeText);
+          const hasAssignedReferee = Boolean(d.refereeID);
+          const hasRefereeFeedback = Boolean(d.refereeText);
+          const assignedRefereeLabel = d.refereeUsername || 'Unknown referee';
           const statusInfo = getStatusDisplay(d);
           
           // Add safe fallbacks for status display
@@ -570,7 +632,7 @@ function Record() {
                   <SlottedSVGTemplate mdiIcon={mdiPuzzle} />
                   <IcStatusTag slot="interaction-button" label={safeStatus} status={safeColor} />
                   
-                  {d.employeeText == null ? (
+                  {!hasEmployeeFeedback ? (
                     <>
                       <div slot="interaction-controls" style={{ display: "flex", gap: "16px" }}>
                         <IcButton onClick={() => openDialog("recordOwnFeedback",experinceID)} variant="primary">Describe Your Experience
@@ -578,33 +640,44 @@ function Record() {
                         </IcButton>
                       </div>
                     </>
-                  ) : employeeText == d.employeeText && refereeUsername == "Select Referee" ? (
+                  ) : hasEmployeeFeedback && !hasAssignedReferee ? (
                     <>
                       <IcTypography slot="adornment" variant="label-uppercase">Your feedback on your experience</IcTypography>
                       <IcTypography slot="adornment">{d.employeeText}</IcTypography>
-                      <div slot="interaction-controls" style={{ display: "flex", gap: "16px" }}>
-                        <form action="http://127.0.0.1:5000/record/requestReferee" method="POST" >
-                          <IcSelect placeholder="start typing name or email"
-                            onIcChange={handleSelectChange}
+                      <div slot="interaction-controls" style={{ display: "flex", gap: "16px", alignItems: "flex-end", width: "100%" }}>
+                        <div style={{ flex: 1, minWidth: "240px" }}>
+                          <IcSelect
+                            placeholder="start typing name or email"
                             options={refereesArray}
                             showClearButton
                             searchable
                             fullWidth="true"
-                            value={selectedValue}
+                            value={selectedRefereeByExperience[d.employee_experienceID] || ''}
+                            onIcChange={(e) => {
+                              const selectedReferee = e?.detail?.value || e?.target?.value || '';
+                              setSelectedRefereeByExperience((prev) => ({
+                                ...prev,
+                                [d.employee_experienceID]: selectedReferee
+                              }));
+                            }}
                           />
-                          <input type="hidden" name="refereeRequest" value={[selectedValue, d.employee_experienceID]} />
-                          <IcButton variant="primary" type="submit"
-                            style={{
-                              marginRight: "var(--ic-space-md)",
-                              marginTop: "var(--ic-space-lg)",
-                            }}>Request Referee</IcButton>
-                        </form>
+                        </div>
+                        <IcButton
+                          variant="primary"
+                          type="button"
+                          onClick={() => handleRequestReferee(d.employee_experienceID)}
+                          style={{ marginBottom: "2px", whiteSpace: "nowrap" }}
+                        >
+                          Request Referee
+                        </IcButton>
                       </div>
                     </>
-                  ) : refereeText == "Awaiting Referee's feedback" ? (
+                  ) : hasEmployeeFeedback && hasAssignedReferee && !hasRefereeFeedback ? (
                     <>
                       <IcTypography slot="adornment" variant="label-uppercase">Your feedback on your experience</IcTypography>
                       <IcTypography slot="adornment">{d.employeeText}</IcTypography>
+                      <IcTypography slot="adornment" variant="label-uppercase">Selected referee</IcTypography>
+                      <IcTypography slot="adornment">{assignedRefereeLabel}</IcTypography>
                     </>
                   ) : // Completed
                     <>
@@ -685,11 +758,26 @@ function Record() {
       closeOnBackdropClick={false}
       heading="Record your experience here."
       disable-height-constraint='true'
+      hideDefaultControls="true"
       buttons="false"
-      onIcDialogClosed={() => closeDialog("recordOwnFeedback")}
+      onIcDialogClosed={() => {
+        setSelectedFeedbackReferee('');
+        closeDialog("recordOwnFeedback");
+      }}
     >
       <form onSubmit={handleSubmitFeedback} id="recordOwnFeedback">
         <IcTextField name="recordOwnFeedback" style={cardContainer} rows={3} label="Remember to be SPECIFIC, CLEAR and RELEVANT " placeholder="Describe how you think it went here (ACTION & RESULT)." type="text" minCharacters="4" maxLength="256" fullWidth="full-width" required />
+        <IcSelect
+          name="experienceReferee"
+          placeholder="start typing name or email"
+          options={refereesArray}
+          label="Select a referee"
+          showClearButton
+          searchable
+          style={{ width: '100%' }}
+          value={selectedFeedbackReferee}
+          onIcChange={(e) => setSelectedFeedbackReferee(e?.detail?.value || e?.target?.value || '')}
+        />
         <br />
         <IcButton 
           variant="primary" 

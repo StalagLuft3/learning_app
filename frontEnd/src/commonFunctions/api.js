@@ -16,8 +16,8 @@ const apiRequest = async (endpoint, options = {}) => {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      // Handle both 'error' and 'errors' response formats
-      const errorMessage = errorData.error || errorData.errors || `HTTP ${response.status}: ${response.statusText}`;
+      // Handle backend response variants ('error', 'errors', and legacy 'section').
+      const errorMessage = errorData.error || errorData.errors || errorData.section || `HTTP ${response.status}: ${response.statusText}`;
       throw new Error(errorMessage);
     }
     

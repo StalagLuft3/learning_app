@@ -82,7 +82,7 @@ const useSelectValue = () => {
   const [selectedValue, setSelectedValue] = useState('');
 
   const handleSelectChange = (event) => {
-    const newValue = event.target.value;
+    const newValue = event?.detail?.value ?? event?.target?.value ?? '';
     setSelectedValue(newValue);
   };
 

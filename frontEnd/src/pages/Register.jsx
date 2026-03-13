@@ -10,7 +10,8 @@ function Register() {
         fullName: '',
         role: '',
         email: '',
-        password: ''
+        password: '',
+        confirmPassword: ''
     });
     const [isLoading, setIsLoading] = useState(false);
     const [alert, setAlert] = useState({ show: false, variant: '', title: '', message: '' });
@@ -38,6 +39,19 @@ function Register() {
             password: formDataFromForm.get('password') || formData.password
         };
 
+        const confirmPassword = formDataFromForm.get('confirmPassword') || formData.confirmPassword;
+
+        if (registrationData.password !== confirmPassword) {
+            setAlert({
+                show: true,
+                variant: 'warning',
+                title: 'Password Mismatch',
+                message: 'Password and Re-enter Password must match.'
+            });
+            setIsLoading(false);
+            return;
+        }
+
         console.log('Registration attempt with data:', registrationData); // Debug log
 
         try {
@@ -63,7 +77,7 @@ function Register() {
                     message: 'Your account has been created. You can now log in.' 
                 });
                 // Clear the form
-                setFormData({ fullName: '', role: '', email: '', password: '' });
+                setFormData({ fullName: '', role: '', email: '', password: '', confirmPassword: '' });
             } else {
                 const result = await response.text();
                 console.error('Registration failed with response:', result); // Debug log
@@ -207,10 +221,25 @@ function Register() {
                     >
                         <SlottedSVGTemplate mdiIcon={mdiLock} />
                     </IcTextField>
+                    <IcTextField 
+                        maxLength={32} 
+                        minLength={12} 
+                        type="password" 
+                        label="Re-enter Password" 
+                        name="confirmPassword" 
+                        required 
+                        placeholder="Re-enter password"
+                        value={formData.confirmPassword}
+                        onIcInput={handleInputChange}
+                        onChange={handleInputChange}
+                    >
+                        <SlottedSVGTemplate mdiIcon={mdiLock} />
+                    </IcTextField>
                     <IcButton 
                         variant="primary" 
                         type="submit" 
-                        disabled={isLoading}
+                        disabled={isLoading || (formData.password !== '' && formData.confirmPassword !== '' && formData.password !== formData.confirmPassword)}
+                        style={{ marginTop: '16px' }}
                     >
                         {isLoading ? 'Registering...' : 'Register'}
                     </IcButton>

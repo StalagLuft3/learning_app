@@ -54,7 +54,7 @@ export const getExperienceStatus = (experience) => {
     };
   }
   
-  if (!experience.refereeID || experience.refereeUsername === 'Select Referee') {
+  if (!experience.refereeID) {
     return { 
       status: 'Referee Required', 
       color: 'warning',

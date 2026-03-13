@@ -73,9 +73,12 @@ function Login() {
                 errorTitle = 'Incorrect Password';
                 errorMessage = 'The password you entered is incorrect. Please try again.';
                 variant = 'warning';
-            } else if (error.message.includes('HTTP')) {
+            } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
                 errorTitle = 'Connection Error';
                 errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+            } else if (error.message.includes('HTTP')) {
+                errorTitle = 'Login Failed';
+                errorMessage = 'The server rejected the login request. Please check your credentials and try again.';
             } else {
                 errorMessage = error.message || 'An unexpected error occurred.';
             }

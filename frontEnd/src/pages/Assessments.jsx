@@ -172,13 +172,36 @@ function Assessments() {
         <form ref={assessmentFormRef} onSubmit={async (e) => {
           e.preventDefault();
           
-          // Use FormData to properly capture form data including radio groups
-          const formDataRaw = new FormData(e.target);
-          const formData = new URLSearchParams(formDataRaw);
+          // Build payload explicitly because custom IcRadioGroup values may not be serialized by FormData.
+          const formElement = e.target;
+          const formDataRaw = new FormData(formElement);
+
+          const assessmentLocation = formElement.querySelector('ic-radio-group[name="deliveryLocation"]')?.value;
+          const assessmentMethod = formElement.querySelector('ic-radio-group[name="deliveryMethod"]')?.value;
+
+          const payload = {
+            courseName: formDataRaw.get('courseName') || '',
+            assessmentDescription: formDataRaw.get('assessmentDescription') || '',
+            assessmentLocation: assessmentLocation || formDataRaw.get('deliveryLocation') || '',
+            assessmentMethod: assessmentMethod || formDataRaw.get('deliveryMethod') || '',
+            duration: formDataRaw.get('duration') || '',
+            maxScore: formDataRaw.get('maxScore') || '',
+            passingScore: formDataRaw.get('passingScore') || '',
+            expiry: formDataRaw.get('expiry') || '0'
+          };
+
+          if (!payload.assessmentLocation || !payload.assessmentMethod) {
+            setAlertMessage('Please select both Delivery Location and Assessment Method.');
+            setAlertType('error');
+            setShowAlert(true);
+            return;
+          }
+
+          const formData = new URLSearchParams(payload);
           
           try {
             console.log('Submitting assessment creation...');
-            console.log('Form data:', Object.fromEntries(formData));
+            console.log('Form data:', payload);
             
             const response = await fetch('http://localhost:5000/CourseCatalogue/createAssessment', {
               method: 'POST',
@@ -209,7 +232,7 @@ function Assessments() {
                 setAlertType('error');
                 setShowAlert(true);
               } else {
-                setAlertMessage('Error creating assessment: ' + (errorData.errors || 'Unknown error'));
+                setAlertMessage('Error creating assessment: ' + (errorData.error || errorData.errors || errorData.message || 'Unknown error'));
                 setAlertType('error');
                 setShowAlert(true);
               }
@@ -230,13 +253,11 @@ function Assessments() {
             <IcRadioOption value="Low" label="Low" />
           </IcRadioGroup>
           <br />
-          <IcRadioGroup name='deliveryMethod' label="Assessment Method" required>
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', flexWrap: 'wrap' }}>
-              <IcRadioOption value="Online" label="Online" />
-              <IcRadioOption value="Written" label="Written" />
-              <IcRadioOption value="Practical" label="Practical" />
-              <IcRadioOption value="Interview" label="Interview" />
-            </div>
+          <IcRadioGroup name='deliveryMethod' label="Assessment Method" orientation="horizontal" required>
+            <IcRadioOption value="Online" label="Online" />
+            <IcRadioOption value="Written" label="Written" />
+            <IcRadioOption value="Practical" label="Practical" />
+            <IcRadioOption value="Interview" label="Interview" />
           </IcRadioGroup>
           <br />
           <IcTextField name="duration" style={cardContainer} label="Duration in Days" placeholder="Insert number of days in increments of 0.125" type="number" min="0.125" fullWidth="full-width" helperText="Increments of 0.125 Days (1 hour)" required />

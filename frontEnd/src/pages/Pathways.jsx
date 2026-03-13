@@ -9,7 +9,7 @@ import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 
 import { useDialogs } from "../commonFunctions/commonDialogHandlers";
 import { fetchData } from "../commonFunctions/api";
-import { handleSearch, clearSearch, getSearchResults } from "../commonFunctions/commonUtilities";
+import { handleSearch, clearSearch } from "../commonFunctions/commonUtilities";
 
 
 function Pathways() {
@@ -63,7 +63,55 @@ function Pathways() {
     }
   }
 
-  const searchMatch = getSearchResults(pathwaysList || [], searchSelection, "pathwayName", "pathwayDescription");
+  const contentByPathway = Array.isArray(contents)
+    ? contents.reduce((acc, item) => {
+        const pathwayId = item?.pathwayID;
+        if (!pathwayId) return acc;
+        if (!acc[pathwayId]) acc[pathwayId] = [];
+        acc[pathwayId].push(item);
+        return acc;
+      }, {})
+    : {};
+
+  const getPathwayTotals = (pathwayId) => {
+    const pathwayContents = contentByPathway[pathwayId] || [];
+
+    const totalItems = pathwayContents.length;
+    const totalDuration = pathwayContents.reduce((sum, item) => {
+      const courseDuration = Number(item?.courses?.duration) || 0;
+      const assessmentDuration = Number(item?.assessments?.duration) || 0;
+      const experienceDuration = Number(item?.experience_templates?.minimumDuration) || 0;
+      return sum + courseDuration + assessmentDuration + experienceDuration;
+    }, 0);
+
+    return {
+      totalItems,
+      totalDuration: Number(totalDuration.toFixed(3))
+    };
+  };
+
+  const searchMatch = (pathwaysList || []).filter((pathway) => {
+    if (!searchSelection) return true;
+
+    const searchTerm = searchSelection.toLowerCase();
+    const titleMatch = (pathway?.pathwayName || '').toLowerCase().includes(searchTerm);
+    const descriptionMatch = (pathway?.pathwayDescription || '').toLowerCase().includes(searchTerm);
+    const managerMatch = (pathway?.manager?.username || '').toLowerCase().includes(searchTerm);
+
+    const pathwayContents = contentByPathway[pathway?.pathwayID] || [];
+    const contentMatch = pathwayContents.some((item) => {
+      const courseName = item?.courses?.courseName || '';
+      const courseDescription = item?.courses?.description || '';
+      const assessmentName = item?.assessments?.name || '';
+      const assessmentDescription = item?.assessments?.description || '';
+      const experienceTitle = item?.experience_templates?.experienceDescription || '';
+
+      const haystack = `${courseName} ${courseDescription} ${assessmentName} ${assessmentDescription} ${experienceTitle}`.toLowerCase();
+      return haystack.includes(searchTerm);
+    });
+
+    return titleMatch || descriptionMatch || managerMatch || contentMatch;
+  });
 
   const handleEnrollPathway = async (pathwayID) => {
     try {
@@ -124,8 +172,6 @@ function Pathways() {
     }
   };
 
-  const filteredPathways = pathwaysList;
-
   return (
     <>
       <Header />
@@ -168,11 +214,15 @@ function Pathways() {
               <IcAccordion heading={pl.pathwayName} key={i}>
               <SlottedSVGTemplate mdiIcon={mdiNavigationVariant} />
                 <IcSectionContainer>
+                  {(() => {
+                    const totals = getPathwayTotals(pl.pathwayID);
+                    return (
                   <div>
                     <IcCardVertical 
                       style={cardContainer}
                       heading={pl.pathwayDescription}
                       subheading={"Pathway Manager: " + (pl.manager ? pl.manager.username : 'Unknown')}
+                      message={`Total items: ${totals.totalItems} | Total duration: ${totals.totalDuration} day(s)`}
                     >
                       {(() => {
                         if (isEnrolledOnPathwayList.includes(pl.pathwayID) === true) {
@@ -185,6 +235,8 @@ function Pathways() {
                       })()}
                     </IcCardVertical>
                   </div>
+                    );
+                  })()}
                 </IcSectionContainer>
                 {contents.map((c, j) => {
                   if (c.pathwayID == pl.pathwayID) {

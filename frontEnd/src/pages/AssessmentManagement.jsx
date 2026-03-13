@@ -209,10 +209,10 @@ const AssessmentManagement = () => {
         name: editFormData.assessmentName,
         description: editFormData.assessmentDescription,
         duration: parseFloat(editFormData.duration) || 0,
-        delivery_method: editFormData.deliveryMethod,
-        delivery_location: editFormData.deliveryLocation,
-        max_score: parseInt(editFormData.maxScore) || 0,
-        passing_score: parseInt(editFormData.passingScore) || 0,
+        deliveryMethod: editFormData.deliveryMethod,
+        deliveryLocation: editFormData.deliveryLocation,
+        maxScore: parseInt(editFormData.maxScore) || 0,
+        passingScore: parseInt(editFormData.passingScore) || 0,
         expiry: editFormData.expiry ? parseInt(editFormData.expiry) : null
       };
       
@@ -533,6 +533,7 @@ const AssessmentManagement = () => {
         closeOnBackdropClick={false}
         heading="Edit Assessment"
         disable-height-constraint='true'
+        hideDefaultControls="true"
         buttons="false"
         onIcDialogClosed={() => setEditDialogOpen(false)}>
         <form onSubmit={(e) => {
@@ -574,16 +575,15 @@ const AssessmentManagement = () => {
           <IcRadioGroup 
             name='editDeliveryMethod'
             label="Assessment Method" 
+            orientation="horizontal"
             value={editFormData.deliveryMethod || ''}
             onIcChange={(e) => handleFormChange('deliveryMethod', e.detail.value)}
             required
           >
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', flexWrap: 'wrap' }}>
-              <IcRadioOption value="Online" label="Online" />
-              <IcRadioOption value="Written" label="Written" />
-              <IcRadioOption value="Practical" label="Practical" />
-              <IcRadioOption value="Interview" label="Interview" />
-            </div>
+            <IcRadioOption value="Online" label="Online" />
+            <IcRadioOption value="Written" label="Written" />
+            <IcRadioOption value="Practical" label="Practical" />
+            <IcRadioOption value="Interview" label="Interview" />
           </IcRadioGroup>
           <br />
           <IcRadioGroup 
@@ -819,7 +819,6 @@ const AssessmentManagement = () => {
           }}
         >
           {managedAssessments.map((assessment) => {
-            // Calculate awaiting count for this assessment
             const awaitingCount = assessment.enrollments.filter(enrollment => {
               const status = getStatusDisplay(enrollment);
               return status?.status !== 'Passed';
