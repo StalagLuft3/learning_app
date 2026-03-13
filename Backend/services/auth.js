@@ -5,7 +5,12 @@ const prisma = new PrismaClient();
 // GET / email search
 async function search(email){
   const result = await prisma.employees.findMany({
-    where: { email: email },
+    where: {
+      email: {
+        equals: email,
+        mode: 'insensitive'
+      }
+    },
     select: { 
       employeeID: true,
       email: true, 

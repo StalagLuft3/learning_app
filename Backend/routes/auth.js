@@ -18,6 +18,7 @@ router.post("/register",[
     ],
     async (req,res) => {
         const {email, password, fullName, role} = req.body;
+        const normalizedEmail = email?.trim().toLowerCase();
         const errors = validationResult(req);
         console.log('Registration request body:', req.body);
         
@@ -27,16 +28,16 @@ router.post("/register",[
         }
         
         try {
-            const existingUser = await auth.search(email);
-            if(existingUser.result.length >= 1 && existingUser.result[0].email === email){
-                console.log('Email already exists:', email);
+            const existingUser = await auth.search(normalizedEmail);
+            if(existingUser.result.length >= 1){
+                console.log('Email already exists:', normalizedEmail);
                 return res.status(400).json({ error: "Email already registered"});
             }
             
             const hashedPassword = await bcrypt.hash(password, 10);
             const token = await JWT.sign(
                 {
-                    email
+                    email: normalizedEmail
                 },
                 dotenv.parsed.SESSION_SECRET,
                 {
@@ -44,13 +45,13 @@ router.post("/register",[
                 }
             );
             
-            console.log('Creating new user:', { email, fullName, role });
-            await auth.register(email, hashedPassword, fullName, role);
+            console.log('Creating new user:', { email: normalizedEmail, fullName, role });
+            await auth.register(normalizedEmail, hashedPassword, fullName, role);
             
             console.log('User created successfully');
             return res.status(200).json({ 
                 message: "Registration successful",
-                email: email 
+                email: normalizedEmail 
             });
             
         } catch (err) {
@@ -71,12 +72,13 @@ router.get("/login", (req, res) => {
 
 router.post("/login", async (req, res) => {
     const {email, password} = req.body;
-    console.log('Login attempt for:', email); // Debug log
+    const normalizedEmail = email?.trim().toLowerCase();
+    console.log('Login attempt for:', normalizedEmail); // Debug log
     
     try {
-        const user = await auth.search(email);
-        if(user.result.length !== 1 || user.result[0].email !== email) {
-            console.log('User not found:', email); // Debug log
+        const user = await auth.search(normalizedEmail);
+        if(user.result.length !== 1) {
+            console.log('User not found:', normalizedEmail); // Debug log
             return res.status(400).json({section: "Login Email not found error"});
         }
         
@@ -89,7 +91,7 @@ router.post("/login", async (req, res) => {
         // Login successful - generate token
         const token = await JWT.sign(
             {
-                email
+                email: user.result[0].email
             },
             dotenv.parsed.SESSION_SECRET,
             {
@@ -97,7 +99,7 @@ router.post("/login", async (req, res) => {
             }
         );
         
-        console.log('Login successful for:', email, '- Setting cookie'); // Debug log
+        console.log('Login successful for:', user.result[0].email, '- Setting cookie'); // Debug log
         
         // Set the authentication cookie
         res.cookie("x-auth-token", token, { 
@@ -112,7 +114,7 @@ router.post("/login", async (req, res) => {
         // Return JSON success response instead of redirect
         return res.status(200).json({ 
             message: "Login successful", 
-            email: email,
+            email: user.result[0].email,
             redirectTo: "/Home"
         });
         

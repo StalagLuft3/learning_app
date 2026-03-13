@@ -647,11 +647,40 @@ async function addCourseToPathway(pathwayID, courseID, token) {
 // REMOVE COURSE FROM PATHWAY
 async function removeCourseFromPathway(pathwayID, courseID, token) {
   try {
+    const parsedPathwayID = parseInt(pathwayID, 10);
+    const parsedCourseID = parseInt(courseID, 10);
+
+    if (Number.isNaN(parsedPathwayID) || Number.isNaN(parsedCourseID)) {
+      throw new Error('Invalid pathway or course ID');
+    }
+
+    const employeeEmail = jwtDecode(token).email;
+    const employee = await prisma.employees.findFirst({
+      where: { email: employeeEmail },
+      select: { employeeID: true }
+    });
+
+    if (!employee) {
+      throw new Error('Employee not found');
+    }
+
+    const pathway = await prisma.pathways.findFirst({
+      where: {
+        pathwayID: parsedPathwayID,
+        pathwayManagerID: employee.employeeID
+      },
+      select: { pathwayID: true }
+    });
+
+    if (!pathway) {
+      throw new Error('Pathway not found or you do not have permission to modify it');
+    }
+
     // Remove the course from pathway
     const result = await prisma.pathways_courses.deleteMany({
       where: {
-        pathwayID: pathwayID,
-        courseID: courseID
+        pathwayID: parsedPathwayID,
+        courseID: parsedCourseID
       }
     });
 
@@ -735,7 +764,7 @@ async function addAssessmentToPathway(pathwayID, assessmentID, token) {
           data: {
             employeeID: student.employeeID,
             assessmentID: parsedAssessmentID,
-            currentStatus: 'In Progress',
+            currentStatus: 'Enrolled',
             recordDate: new Date().toISOString().split('T')[0]
           }
         });
@@ -760,11 +789,40 @@ async function addAssessmentToPathway(pathwayID, assessmentID, token) {
 // REMOVE ASSESSMENT FROM PATHWAY
 async function removeAssessmentFromPathway(pathwayID, assessmentID, token) {
   try {
+    const parsedPathwayID = parseInt(pathwayID, 10);
+    const parsedAssessmentID = parseInt(assessmentID, 10);
+
+    if (Number.isNaN(parsedPathwayID) || Number.isNaN(parsedAssessmentID)) {
+      throw new Error('Invalid pathway or assessment ID');
+    }
+
+    const employeeEmail = jwtDecode(token).email;
+    const employee = await prisma.employees.findFirst({
+      where: { email: employeeEmail },
+      select: { employeeID: true }
+    });
+
+    if (!employee) {
+      throw new Error('Employee not found');
+    }
+
+    const pathway = await prisma.pathways.findFirst({
+      where: {
+        pathwayID: parsedPathwayID,
+        pathwayManagerID: employee.employeeID
+      },
+      select: { pathwayID: true }
+    });
+
+    if (!pathway) {
+      throw new Error('Pathway not found or you do not have permission to modify it');
+    }
+
     // Remove the assessment from pathway
     const result = await prisma.pathways_assessments.deleteMany({
       where: {
-        pathwayID: pathwayID,
-        assessmentID: assessmentID
+        pathwayID: parsedPathwayID,
+        assessmentID: parsedAssessmentID
       }
     });
 
@@ -878,11 +936,40 @@ async function addExperienceTemplateToPathway(pathwayID, templateID, token) {
 // REMOVE EXPERIENCE TEMPLATE FROM PATHWAY
 async function removeExperienceTemplateFromPathway(pathwayID, templateID, token) {
   try {
+    const parsedPathwayID = parseInt(pathwayID, 10);
+    const parsedTemplateID = parseInt(templateID, 10);
+
+    if (Number.isNaN(parsedPathwayID) || Number.isNaN(parsedTemplateID)) {
+      throw new Error('Invalid pathway or experience template ID');
+    }
+
+    const employeeEmail = jwtDecode(token).email;
+    const employee = await prisma.employees.findFirst({
+      where: { email: employeeEmail },
+      select: { employeeID: true }
+    });
+
+    if (!employee) {
+      throw new Error('Employee not found');
+    }
+
+    const pathway = await prisma.pathways.findFirst({
+      where: {
+        pathwayID: parsedPathwayID,
+        pathwayManagerID: employee.employeeID
+      },
+      select: { pathwayID: true }
+    });
+
+    if (!pathway) {
+      throw new Error('Pathway not found or you do not have permission to modify it');
+    }
+
     // Remove the experience template from pathway
     const result = await prisma.pathways_experience_templates.deleteMany({
       where: {
-        pathwayID: pathwayID,
-        experience_templateID: templateID
+        pathwayID: parsedPathwayID,
+        experience_templateID: parsedTemplateID
       }
     });
 
