@@ -246,26 +246,59 @@ function Assessments() {
             closeDialog('createAssessment');
           }
         }} id="createAssessmentForm">
-          <IcTextField name="courseName" style={cardContainer} label="Assessment Name" type="text" minCharacters={4} maxCharcters={64} fullWidth="full-width" required />
-          <IcTextField name="assessmentDescription" style={cardContainer} label="Assessment Description" rows={3} type="text" minCharacters={16} maxCharcters={256} fullWidth="full-width" required />
-          <IcRadioGroup name='deliveryLocation' label="Delivery Location" orientation="horizontal" required>
-            <IcRadioOption value="High" label="High" />
-            <IcRadioOption value="Low" label="Low" />
-          </IcRadioGroup>
-          <br />
+          <IcTextField
+            name="courseName"
+            label="Assessment Name"
+            type="text"
+            minCharacters={4}
+            maxCharcters={64}
+            fullWidth="full-width"
+            required
+          />
+          <IcTextField
+            name="assessmentDescription"
+            label="Assessment Description"
+            rows={3}
+            type="text"
+            minCharacters={16}
+            maxCharcters={256}
+            fullWidth="full-width"
+            required
+          />
+          <IcTextField
+            name="duration"
+            label="Duration (days)"
+            placeholder="Insert number of days in increments of 0.125"
+            type="number"
+            step="0.125"
+            min="0.125"
+            fullWidth="full-width"
+            helperText="Increments of 0.125 Days (1 hour)"
+            required
+          />
           <IcRadioGroup name='deliveryMethod' label="Assessment Method" orientation="horizontal" required>
             <IcRadioOption value="Online" label="Online" />
             <IcRadioOption value="Written" label="Written" />
             <IcRadioOption value="Practical" label="Practical" />
             <IcRadioOption value="Interview" label="Interview" />
           </IcRadioGroup>
-          <br />
-          <IcTextField name="duration" style={cardContainer} label="Duration in Days" placeholder="Insert number of days in increments of 0.125" type="number" min="0.125" fullWidth="full-width" helperText="Increments of 0.125 Days (1 hour)" required />
+          <IcRadioGroup name='deliveryLocation' label="Delivery Location" orientation="horizontal" required>
+            <IcRadioOption value="High" label="High" />
+            <IcRadioOption value="Low" label="Low" />
+          </IcRadioGroup>
           <IcTextField name="maxScore" label="Maximum Score" type="number" min="1" fullWidth="full-width" required />
           <IcTextField name="passingScore" label="Passing Score" type="number" min="1" fullWidth="full-width" required />
           <IcTextField name="expiry" label="Expiry (Full Years or 0 when no expiry)" type="number" min="0" fullWidth="full-width" required />
-          <br />
-          <IcButton variant="primary" type="submit" form="createAssessmentForm">Create Assessment</IcButton>
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
+            <IcButton
+              variant="tertiary"
+              type="button"
+              onClick={() => closeDialog('createAssessment')}
+            >
+              Cancel
+            </IcButton>
+            <IcButton variant="primary" type="submit" form="createAssessmentForm">Create Assessment</IcButton>
+          </div>
         </form>
       </IcDialog>
 

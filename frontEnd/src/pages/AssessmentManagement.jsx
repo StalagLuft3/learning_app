@@ -198,23 +198,32 @@ const AssessmentManagement = () => {
     }
   };
 
-  const handleUpdateSubmit = async () => {
+  const handleUpdateSubmit = async (formElement) => {
     if (!selectedAssessment) return;
     
     try {
       setSubmitting(true);
+
+      // Read IcRadioGroup values directly from the element, matching the working create-dialog pattern.
+      const formDataRaw = formElement ? new FormData(formElement) : null;
+      const deliveryMethod = formElement?.querySelector('ic-radio-group[name="editDeliveryMethod"]')?.value;
+      const deliveryLocation = formElement?.querySelector('ic-radio-group[name="editDeliveryLocation"]')?.value;
       
       const updateData = {
         assessmentID: selectedAssessment.assessmentID,
         name: editFormData.assessmentName,
         description: editFormData.assessmentDescription,
         duration: parseFloat(editFormData.duration) || 0,
-        deliveryMethod: editFormData.deliveryMethod,
-        deliveryLocation: editFormData.deliveryLocation,
+        deliveryMethod: deliveryMethod || formDataRaw?.get('editDeliveryMethod') || editFormData.deliveryMethod || '',
+        deliveryLocation: deliveryLocation || formDataRaw?.get('editDeliveryLocation') || editFormData.deliveryLocation || '',
         maxScore: parseInt(editFormData.maxScore) || 0,
         passingScore: parseInt(editFormData.passingScore) || 0,
         expiry: editFormData.expiry ? parseInt(editFormData.expiry) : null
       };
+
+      if (!updateData.deliveryMethod || !updateData.deliveryLocation) {
+        throw new Error('Please select both Delivery Location and Assessment Method.');
+      }
       
       const response = await fetch('http://localhost:5000/ManageContents/updateAssessment', {
         method: 'PUT',
@@ -340,20 +349,29 @@ const AssessmentManagement = () => {
     setHasChanges(hasRequiredFields);
   };
 
-  const handleCreateSubmit = async () => {
+  const handleCreateSubmit = async (formElement) => {
     try {
       setSubmitting(true);
+
+      // Read IcRadioGroup values directly from the element, matching the working Assessments page pattern.
+      const formDataRaw = formElement ? new FormData(formElement) : null;
+      const assessmentLocation = formElement?.querySelector('ic-radio-group[name="deliveryLocation"]')?.value;
+      const assessmentMethod = formElement?.querySelector('ic-radio-group[name="deliveryMethod"]')?.value;
       
       const createData = {
         courseName: createFormData.assessmentName,
         assessmentDescription: createFormData.assessmentDescription,
         duration: parseFloat(createFormData.duration) || 0,
-        assessmentMethod: createFormData.deliveryMethod || 'Online Assessment',
-        assessmentLocation: createFormData.deliveryLocation || 'High',
+        assessmentMethod: assessmentMethod || formDataRaw?.get('deliveryMethod') || '',
+        assessmentLocation: assessmentLocation || formDataRaw?.get('deliveryLocation') || '',
         maxScore: parseInt(createFormData.maxScore) || 0,
         passingScore: parseInt(createFormData.passingScore) || 0,
         expiry: createFormData.expiry ? parseInt(createFormData.expiry) : null
       };
+
+      if (!createData.assessmentLocation || !createData.assessmentMethod) {
+        throw new Error('Please select both Delivery Location and Assessment Method.');
+      }
       
       const response = await fetch('http://localhost:5000/CourseCatalogue/createAssessment', {
         method: 'POST',
@@ -405,6 +423,7 @@ const AssessmentManagement = () => {
         closeOnBackdropClick={false}
         heading="Create New Assessment"
         disable-height-constraint='true'
+        hideDefaultControls="true"
         buttons="false"
         onIcDialogClosed={() => {
           setCreateDialogOpen(false);
@@ -412,7 +431,7 @@ const AssessmentManagement = () => {
         }}>
         <form onSubmit={(e) => {
           e.preventDefault();
-          handleCreateSubmit();
+          handleCreateSubmit(e.currentTarget);
         }}>
           <IcTextField 
             value={createFormData.assessmentName || ''} 
@@ -449,24 +468,19 @@ const AssessmentManagement = () => {
           <IcRadioGroup 
             name='deliveryMethod'
             label="Assessment Method" 
-            value={createFormData.deliveryMethod || ''}
-            onIcChange={(e) => handleCreateFormChange('deliveryMethod', e.detail.value)}
+            orientation="horizontal"
             required
           >
-            <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', flexWrap: 'wrap' }}>
-              <IcRadioOption value="Online" label="Online" />
-              <IcRadioOption value="Written" label="Written" />
-              <IcRadioOption value="Practical" label="Practical" />
-              <IcRadioOption value="Interview" label="Interview" />
-            </div>
+            <IcRadioOption value="Online" label="Online" />
+            <IcRadioOption value="Written" label="Written" />
+            <IcRadioOption value="Practical" label="Practical" />
+            <IcRadioOption value="Interview" label="Interview" />
           </IcRadioGroup>
           <br />
           <IcRadioGroup 
             name='deliveryLocation'
             label="Delivery Location" 
             orientation="horizontal"
-            value={createFormData.deliveryLocation || ''}
-            onIcChange={(e) => handleCreateFormChange('deliveryLocation', e.detail.value)}
             required
           >
             <IcRadioOption value="High" label="High" />
@@ -538,7 +552,7 @@ const AssessmentManagement = () => {
         onIcDialogClosed={() => setEditDialogOpen(false)}>
         <form onSubmit={(e) => {
           e.preventDefault();
-          handleUpdateSubmit();
+          handleUpdateSubmit(e.currentTarget);
         }}>
           <IcTextField 
             value={editFormData.assessmentName || ''} 
@@ -576,7 +590,6 @@ const AssessmentManagement = () => {
             name='editDeliveryMethod'
             label="Assessment Method" 
             orientation="horizontal"
-            value={editFormData.deliveryMethod || ''}
             onIcChange={(e) => handleFormChange('deliveryMethod', e.detail.value)}
             required
           >
@@ -590,7 +603,6 @@ const AssessmentManagement = () => {
             name='editDeliveryLocation'
             label="Delivery Location" 
             orientation="horizontal"
-            value={editFormData.deliveryLocation || ''}
             onIcChange={(e) => handleFormChange('deliveryLocation', e.detail.value)}
             required
           >

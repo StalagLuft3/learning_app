@@ -567,18 +567,26 @@ const PathwayManagement = () => {
     }
   };
 
-  const removeContentFromPathway = async (contentId, contentType) => {
+  const removeContentFromPathway = async (contentId, contentType, pathwayId) => {
     try {
       setSubmitting(true);
+
+      const targetPathwayId = pathwayId || currentPathwayForContent;
+      if (!targetPathwayId) {
+        throw new Error('No pathway selected for content removal.');
+      }
       
       let endpoint = '';
       
       switch (contentType) {
         case 'courses':
-          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/remove-course/${contentId}`;
+          endpoint = `http://localhost:5000/ManageContents/pathways/${targetPathwayId}/remove-course/${contentId}`;
           break;
         case 'assessments':
-          endpoint = `http://localhost:5000/ManageContents/pathways/${currentPathwayForContent}/remove-assessment/${contentId}`;
+          endpoint = `http://localhost:5000/ManageContents/pathways/${targetPathwayId}/remove-assessment/${contentId}`;
+          break;
+        case 'experienceTemplates':
+          endpoint = `http://localhost:5000/ManageContents/pathways/${targetPathwayId}/remove-experience-template/${contentId}`;
           break;
 
         default:
@@ -590,7 +598,15 @@ const PathwayManagement = () => {
         credentials: 'include',
       });
 
-      const result = await response.json();
+      const rawResponse = await response.text();
+      let result = {};
+      try {
+        result = rawResponse ? JSON.parse(rawResponse) : {};
+      } catch (parseError) {
+        if (!response.ok) {
+          throw new Error('Server returned a non-JSON error response. If backend changes were just made, restart the backend server and try again.');
+        }
+      }
       
       if (response.ok) {
         setAlertMessage(result.message || `${contentType.slice(0, -1)} removed successfully!`);
@@ -602,7 +618,7 @@ const PathwayManagement = () => {
         await loadManagedPathways();
         
       } else {
-        throw new Error(result.error || `Failed to remove ${contentType.slice(0, -1)}`);
+        throw new Error(result.error || result.message || `Failed to remove ${contentType.slice(0, -1)} (HTTP ${response.status})`);
       }
       
     } catch (error) {
@@ -1081,7 +1097,8 @@ const PathwayManagement = () => {
 
                 {/* Pathway Contents Section */}
                 {((pathway.courses && pathway.courses.length > 0) || 
-                  (pathway.assessments && pathway.assessments.length > 0)) && (
+                  (pathway.assessments && pathway.assessments.length > 0) ||
+                  (pathway.experienceTemplates && pathway.experienceTemplates.length > 0)) && (
                   <IcAccordion heading="Pathway Contents" style={{ marginBottom: '16px' }}>
                     {/* Courses */}
                     {pathway.courses && pathway.courses.length > 0 && (
@@ -1102,8 +1119,7 @@ const PathwayManagement = () => {
                                     size="small" 
                                     variant="destructive"
                                     onClick={() => {
-                                      setCurrentPathwayForContent(pathway.pathwayID);
-                                      removeContentFromPathway(course.courseID, 'courses');
+                                      removeContentFromPathway(course.courseID, 'courses', pathway.pathwayID);
                                     }}
                                     disabled={submitting}
                                   >
@@ -1139,8 +1155,7 @@ const PathwayManagement = () => {
                                       size="small" 
                                       variant="destructive"
                                       onClick={() => {
-                                        setCurrentPathwayForContent(pathway.pathwayID);
-                                        removeContentFromPathway(assessment.assessmentID, 'assessments');
+                                        removeContentFromPathway(assessment.assessmentID, 'assessments', pathway.pathwayID);
                                       }}
                                       disabled={submitting}
                                     >
@@ -1153,6 +1168,40 @@ const PathwayManagement = () => {
                             </div>
                           );
                         })}
+                      </>
+                    )}
+
+                    {/* Experience Templates */}
+                    {pathway.experienceTemplates && pathway.experienceTemplates.length > 0 && (
+                      <>
+                        {pathway.experienceTemplates.map((template, idx) => (
+                          <div key={`template-${idx}`} style={{ ...divContainer, marginBottom: '16px' }}>
+                            <div>
+                              <IcCardVertical
+                                fullWidth="true"
+                                style={cardContainer}
+                                heading={`Experience Template #${template.experience_templateID || 'N/A'}`}
+                                subheading={`Minimum Duration: ${template.minimumDuration ?? 0} day(s)`}
+                                message={template.experienceDescription || 'No description available'}
+                              >
+                                <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
+                                <div slot="interaction-controls" style={{ display: "flex", gap: "8px" }}>
+                                  <IcButton
+                                    size="small"
+                                    variant="destructive"
+                                    onClick={() => {
+                                      removeContentFromPathway(template.experience_templateID, 'experienceTemplates', pathway.pathwayID);
+                                    }}
+                                    disabled={submitting}
+                                  >
+                                    <SlottedSVGTemplate mdiIcon={mdiDelete} />
+                                    Remove
+                                  </IcButton>
+                                </div>
+                              </IcCardVertical>
+                            </div>
+                          </div>
+                        ))}
                       </>
                     )}
 

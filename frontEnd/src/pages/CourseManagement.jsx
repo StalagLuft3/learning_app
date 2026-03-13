@@ -7,7 +7,7 @@ import Footer from "../components/ITRFooter";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 import { updateItemStatus } from "../commonFunctions/commonFeedbackUtilities";
 import { getStatusDisplay, canUpdateStatus } from "../commonFunctions/statusUtilities";
-import { fetchData } from "../commonFunctions/api";
+import { fetchData, postData, putData } from "../commonFunctions/api";
 
 const CourseManagement = () => {
   const [managedCourses, setManagedCourses] = useState([]);
@@ -162,37 +162,23 @@ const CourseManagement = () => {
         deliveryLocation: formData.deliveryLocation
       };
 
-      const response = await fetch('http://localhost:5000/ManageContents/updateCourse', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(updateData)
-      });
+      await putData('/ManageContents/updateCourse', updateData);
 
-      const result = await response.json();
+      setAlertMessage('Course updated successfully!');
+      setAlertType('success');
+      setAlertVisible(true);
       
-      if (response.ok) {
-        setAlertMessage('Course updated successfully!');
-        setAlertType('success');
-        setAlertVisible(true);
-        
-        setTimeout(() => {
-          setAlertVisible(false);
-        }, 3000);
-        
-        // Reset unsaved changes flag
-        setHasUnsavedChanges(prev => ({
-          ...prev,
-          [courseID]: false
-        }));
-        
-        await loadManagedCourses();
-        
-      } else {
-        throw new Error(result.error || 'Failed to update course');
-      }
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 3000);
+      
+      // Reset unsaved changes flag
+      setHasUnsavedChanges(prev => ({
+        ...prev,
+        [courseID]: false
+      }));
+      
+      await loadManagedCourses();
       
     } catch (error) {
       console.error('Failed to update course:', error);
@@ -260,32 +246,18 @@ const CourseManagement = () => {
         deliveryLocation: editFormData.delivery_location
       };
 
-      const response = await fetch('http://localhost:5000/ManageContents/updateCourse', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(updateData)
-      });
+      await putData('/ManageContents/updateCourse', updateData);
 
-      const result = await response.json();
+      setAlertMessage('Course updated successfully!');
+      setAlertType('success');
+      setAlertVisible(true);
+      setEditDialogOpen(false);
       
-      if (response.ok) {
-        setAlertMessage('Course updated successfully!');
-        setAlertType('success');
-        setAlertVisible(true);
-        setEditDialogOpen(false);
-        
-        setTimeout(() => {
-          setAlertVisible(false);
-        }, 3000);
-        
-        await loadManagedCourses();
-        
-      } else {
-        throw new Error(result.error || 'Failed to update course');
-      }
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 3000);
+      
+      await loadManagedCourses();
       
     } catch (error) {
       console.error('Failed to update course:', error);
@@ -367,40 +339,26 @@ const CourseManagement = () => {
       setSubmitting(true);
       
       const createData = {
-        name: createFormData.courseName,
-        description: createFormData.courseDescription,
-        duration: parseFloat(createFormData.duration) || 0,
-        delivery_method: createFormData.deliveryMethod || 'Online Course',
-        delivery_location: createFormData.deliveryLocation || 'High'
+        courseName: createFormData.courseName,
+        courseDescription: createFormData.courseDescription,
+        courseMethod: createFormData.deliveryMethod || 'Online Course',
+        courseLocation: createFormData.deliveryLocation || 'High',
+        duration: parseFloat(createFormData.duration) || 0
       };
-      
-      const response = await fetch('http://localhost:5000/ManageContents/createCourse', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(createData)
-      });
 
-      const result = await response.json();
+      await postData('/CourseCatalogue/createCourse', createData);
+
+      setAlertMessage('Course created successfully!');
+      setAlertType('success');
+      setAlertVisible(true);
+      setCreateDialogOpen(false);
+      setIsCreateMode(false);
       
-      if (response.ok) {
-        setAlertMessage('Course created successfully!');
-        setAlertType('success');
-        setAlertVisible(true);
-        setCreateDialogOpen(false);
-        setIsCreateMode(false);
-        
-        setTimeout(() => {
-          setAlertVisible(false);
-        }, 3000);
-        
-        await loadManagedCourses();
-        
-      } else {
-        throw new Error(result.error || 'Failed to create course');
-      }
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 3000);
+      
+      await loadManagedCourses();
       
     } catch (error) {
       console.error('Failed to create course:', error);
@@ -521,6 +479,106 @@ const CourseManagement = () => {
             Create Course
           </IcButton>
         </IcHero>
+
+        {/* Create Course Dialog (needed in empty state where main dialogs are not rendered) */}
+        <IcDialog
+          size="large"
+          open={createDialogOpen}
+          closeOnBackdropClick={false}
+          heading="Create New Course"
+          hideDefaultControls="true"
+          disable-height-constraint='true'
+          buttons="false"
+          onIcDialogClosed={() => {
+            setCreateDialogOpen(false);
+            setIsCreateMode(false);
+          }}>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            handleCreateSubmit();
+          }}>
+            <IcTextField 
+              value={createFormData.courseName || ''} 
+              onIcInput={(e) => handleCreateFormChange('courseName', e.detail.value)}
+              label="Course Name" 
+              type="text" 
+              minCharacters={4} 
+              maxCharcters={64} 
+              fullWidth="full-width" 
+              required 
+            />
+            <IcTextField 
+              value={createFormData.courseDescription || ''} 
+              onIcInput={(e) => handleCreateFormChange('courseDescription', e.detail.value)}
+              label="Course Description" 
+              rows={3} 
+              type="text" 
+              minCharacters={16} 
+              maxCharcters={256} 
+              fullWidth="full-width" 
+              required 
+            />
+            <IcTextField
+              value={createFormData.duration || ''}
+              onIcInput={(e) => handleCreateFormChange('duration', e.detail.value)}
+              label="Duration (days)"
+              type="number"
+              step="0.125"
+              min="0.125"
+              helperText="Increments of 0.125 Days (1 hour)"
+              fullWidth="full-width"
+              required
+            />
+            <div style={{ position: 'relative', zIndex: 100 }}>
+              <IcSelect
+                value={createFormData.deliveryMethod || ''}
+                onIcChange={(e) => handleCreateFormChange('deliveryMethod', e?.detail?.value || e?.target?.value || '')}
+                label="Delivery Method"
+                fullWidth="full-width"
+                options={[
+                  { label: 'Online Course', value: 'Online Course' },
+                  { label: 'Written Course', value: 'Written Course' },
+                  { label: 'Practical Course', value: 'Practical Course' },
+                  { label: 'Interview Course', value: 'Interview Course' }
+                ]}
+              />
+            </div>
+            <div style={{ position: 'relative', zIndex: 50 }}>
+              <IcSelect
+                value={createFormData.deliveryLocation || ''}
+                onIcChange={(e) => handleCreateFormChange('deliveryLocation', e?.detail?.value || e?.target?.value || '')}
+                label="Delivery Location"
+                fullWidth="full-width"
+                options={[
+                  { label: 'High', value: 'High' },
+                  { label: 'Low', value: 'Low' }
+                ]}
+              />
+            </div>
+            <div style={{ height: '180px' }} />
+            <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
+              <IcButton 
+                variant="tertiary" 
+                onClick={() => {
+                  setCreateDialogOpen(false);
+                  setIsCreateMode(false);
+                }}
+                type="button"
+              >
+                Cancel
+              </IcButton>
+              <IcButton 
+                variant="primary" 
+                type="submit"
+                disabled={!hasChanges}
+              >
+                <SlottedSVGTemplate mdiIcon={mdiBookOutline} />
+                {hasChanges ? 'Create Course' : 'Fill Required Fields'}
+              </IcButton>
+            </div>
+          </form>
+        </IcDialog>
+
         <Footer />
       </>
     );
@@ -871,33 +929,34 @@ const CourseManagement = () => {
             helperText="Increments of 0.125 Days (1 hour)" 
             required 
           />
-          <IcSelect 
-            name="deliveryMethod" 
-            label="Delivery Method" 
-            required
-            value={editFormData.delivery_method || ''}
-            onIcChange={(e) => handleFormChange('delivery_method', e?.detail?.value || e?.target?.value || '')}
-            style={{ position: 'relative', zIndex: 30 }}
-            options={[
-              { label: 'In-Person', value: 'In-Person' },
-              { label: 'Virtual', value: 'Virtual' },
-              { label: 'Hybrid', value: 'Hybrid' }
-            ]}
-          />
-          <IcSelect 
-            name="deliveryLocation" 
-            label="Delivery Location" 
-            required
-            value={editFormData.delivery_location || ''}
-            onIcChange={(e) => handleFormChange('delivery_location', e?.detail?.value || e?.target?.value || '')}
-            style={{ position: 'relative', zIndex: 20 }}
-            options={[
-              { label: 'High', value: 'High' },
-              { label: 'Low', value: 'Low' }
-            ]}
-          />
-          
-          <br />
+          <div style={{ position: 'relative', zIndex: 100 }}>
+            <IcSelect 
+              name="deliveryMethod" 
+              label="Delivery Method" 
+              required
+              value={editFormData.delivery_method || ''}
+              onIcChange={(e) => handleFormChange('delivery_method', e?.detail?.value || e?.target?.value || '')}
+              options={[
+                { label: 'In-Person', value: 'In-Person' },
+                { label: 'Virtual', value: 'Virtual' },
+                { label: 'Hybrid', value: 'Hybrid' }
+              ]}
+            />
+          </div>
+          <div style={{ position: 'relative', zIndex: 50 }}>
+            <IcSelect 
+              name="deliveryLocation" 
+              label="Delivery Location" 
+              required
+              value={editFormData.delivery_location || ''}
+              onIcChange={(e) => handleFormChange('delivery_location', e?.detail?.value || e?.target?.value || '')}
+              options={[
+                { label: 'High', value: 'High' },
+                { label: 'Low', value: 'Low' }
+              ]}
+            />
+          </div>
+          <div style={{ height: '180px' }} />
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'space-between' }}>
             <IcButton 
               variant="destructive" 
@@ -925,6 +984,7 @@ const CourseManagement = () => {
         open={createDialogOpen}
         closeOnBackdropClick={false}
         heading="Create New Course"
+        hideDefaultControls="true"
         disable-height-constraint='true'
         buttons="false"
         onIcDialogClosed={() => {
@@ -967,30 +1027,33 @@ const CourseManagement = () => {
             fullWidth="full-width"
             required
           />
-          <IcSelect
-            value={createFormData.deliveryMethod || ''}
-            onIcChange={(e) => handleCreateFormChange('deliveryMethod', e?.detail?.value || e?.target?.value || '')}
-            label="Delivery Method"
-            fullWidth="full-width"
-            options={[
-              { label: 'Online Course', value: 'Online Course' },
-              { label: 'Written Course', value: 'Written Course' },
-              { label: 'Practical Course', value: 'Practical Course' },
-              { label: 'Interview Course', value: 'Interview Course' }
-            ]}
-          />
-          <IcSelect
-            value={createFormData.deliveryLocation || ''}
-            onIcChange={(e) => handleCreateFormChange('deliveryLocation', e?.detail?.value || e?.target?.value || '')}
-            label="Delivery Location"
-            fullWidth="full-width"
-            options={[
-              { label: 'High', value: 'High' },
-              { label: 'Low', value: 'Low' }
-            ]}
-          />
-          
-          <br />
+          <div style={{ position: 'relative', zIndex: 100 }}>
+            <IcSelect
+              value={createFormData.deliveryMethod || ''}
+              onIcChange={(e) => handleCreateFormChange('deliveryMethod', e?.detail?.value || e?.target?.value || '')}
+              label="Delivery Method"
+              fullWidth="full-width"
+              options={[
+                { label: 'Online Course', value: 'Online Course' },
+                { label: 'Written Course', value: 'Written Course' },
+                { label: 'Practical Course', value: 'Practical Course' },
+                { label: 'Interview Course', value: 'Interview Course' }
+              ]}
+            />
+          </div>
+          <div style={{ position: 'relative', zIndex: 50 }}>
+            <IcSelect
+              value={createFormData.deliveryLocation || ''}
+              onIcChange={(e) => handleCreateFormChange('deliveryLocation', e?.detail?.value || e?.target?.value || '')}
+              label="Delivery Location"
+              fullWidth="full-width"
+              options={[
+                { label: 'High', value: 'High' },
+                { label: 'Low', value: 'Low' }
+              ]}
+            />
+          </div>
+          <div style={{ height: '180px' }} />
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end' }}>
             <IcButton 
               variant="tertiary" 

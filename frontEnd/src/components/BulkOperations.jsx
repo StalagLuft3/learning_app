@@ -96,7 +96,6 @@ const BulkOperations = ({
     } else if (type === 'assessment') {
       return [
         { label: 'Enrolled', value: 'Enrolled' },
-        { label: 'In Progress', value: 'In Progress' },
         { label: 'Passed', value: 'Passed' },
         { label: 'Failed', value: 'Failed' },
         { label: 'Withdrawn', value: 'Withdrawn' }
