@@ -282,7 +282,7 @@ async function createCourse(courseName, courseDescription, courseLocation, cours
         description: courseDescription,
         delivery_location: courseLocation,
         delivery_method: courseMethod,
-        duration: parseInt(duration),  // Schema expects Int, not Float
+        duration: parseFloat(duration),
         courseManagerID: employee.employeeID
       }
     });

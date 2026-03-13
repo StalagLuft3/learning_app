@@ -360,6 +360,11 @@ async function updatePathwayEnrollment(enrollmentId, updateData, token) {
 // GET AVAILABLE COURSES FOR PATHWAY
 async function getAvailableCourses(pathwayID, token) {
   try {
+    const parsedPathwayID = parseInt(pathwayID);
+    if (Number.isNaN(parsedPathwayID)) {
+      throw new Error('Invalid pathway ID');
+    }
+
     const employeeEmail = jwtDecode(token).email;
     
     const employee = await prisma.employees.findFirst({
@@ -373,7 +378,7 @@ async function getAvailableCourses(pathwayID, token) {
 
     // Get courses already in this pathway
     const pathwayCourses = await prisma.pathways_courses.findMany({
-      where: { pathwayID: pathwayID },
+      where: { pathwayID: parsedPathwayID },
       select: { courseID: true }
     });
 
@@ -409,6 +414,11 @@ async function getAvailableCourses(pathwayID, token) {
 // GET AVAILABLE ASSESSMENTS FOR PATHWAY
 async function getAvailableAssessments(pathwayID, token) {
   try {
+    const parsedPathwayID = parseInt(pathwayID);
+    if (Number.isNaN(parsedPathwayID)) {
+      throw new Error('Invalid pathway ID');
+    }
+
     const employeeEmail = jwtDecode(token).email;
     
     const employee = await prisma.employees.findFirst({
@@ -422,7 +432,7 @@ async function getAvailableAssessments(pathwayID, token) {
 
     // Get assessments already in this pathway
     const pathwayAssessments = await prisma.pathways_assessments.findMany({
-      where: { pathwayID: pathwayID },
+      where: { pathwayID: parsedPathwayID },
       select: { assessmentID: true }
     });
 
@@ -458,9 +468,14 @@ async function getAvailableAssessments(pathwayID, token) {
 // GET AVAILABLE EXPERIENCE TEMPLATES FOR PATHWAY
 async function getAvailableExperienceTemplates(pathwayID, token) {
   try {
+    const parsedPathwayID = parseInt(pathwayID);
+    if (Number.isNaN(parsedPathwayID)) {
+      throw new Error('Invalid pathway ID');
+    }
+
     // Get experience templates already in this pathway
     const pathwayTemplates = await prisma.pathways_experience_templates.findMany({
-      where: { pathwayID: pathwayID },
+      where: { pathwayID: parsedPathwayID },
       select: { experience_templateID: true }
     });
 

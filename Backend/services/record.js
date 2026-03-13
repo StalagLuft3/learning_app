@@ -243,12 +243,53 @@ async function referees(){
 }
 
 // // POST / REQUEST REFEREE
-async function requestReferee(refereeRequest, token){
+async function requestReferee(requestData, token){
   try {
     const employeeEmail = jwtDecode(token).email;
-    const myArray = refereeRequest.split(",");
-    const refereeID = parseInt(myArray[0]);
-    const employee_experienceID = parseInt(myArray[1]);
+    let refereeID = null;
+    let refereeRawValue = null;
+    let employee_experienceID = null;
+
+    if (typeof requestData === 'string') {
+      const myArray = requestData.split(',');
+      refereeRawValue = myArray[0];
+      employee_experienceID = parseInt(myArray[1], 10);
+    } else if (requestData && typeof requestData === 'object') {
+      if (requestData.refereeRequest) {
+        const myArray = String(requestData.refereeRequest).split(',');
+        refereeRawValue = myArray[0];
+        employee_experienceID = parseInt(myArray[1], 10);
+      } else {
+        refereeRawValue = requestData.refereeID;
+        employee_experienceID = parseInt(requestData.experienceID, 10);
+      }
+    }
+
+    // Referee can come through as ID or selected label/email depending on client control behavior.
+    const parsedRefereeId = parseInt(refereeRawValue, 10);
+    if (!Number.isNaN(parsedRefereeId)) {
+      refereeID = parsedRefereeId;
+    } else if (typeof refereeRawValue === 'string' && refereeRawValue.trim() !== '') {
+      const trimmed = refereeRawValue.trim();
+      const matchedReferee = await prisma.employees.findFirst({
+        where: {
+          OR: [
+            { username: trimmed },
+            { email: trimmed }
+          ]
+        },
+        select: { employeeID: true }
+      });
+      refereeID = matchedReferee?.employeeID ?? null;
+    }
+
+    if (Number.isNaN(refereeID) || Number.isNaN(employee_experienceID)) {
+      throw new Error('Invalid referee request payload');
+    }
+
+    if (!refereeID) {
+      throw new Error('Unable to resolve selected referee');
+    }
     
     const employee = await prisma.employees.findFirst({
       where: { email: employeeEmail },
@@ -268,6 +309,10 @@ async function requestReferee(refereeRequest, token){
         refereeID: refereeID
       }
     });
+
+    if (!result || result.count === 0) {
+      throw new Error('No matching experience found to update');
+    }
     
     return result;
   } catch (error) {
@@ -333,7 +378,7 @@ async function recordExperience(experienceDate, experienceDuration, experienceDe
 }
 
 // // POST / RECORD OWN FEEDBACK
-async function recordOwnFeedback(recordOwnFeedback, experienceID, token){
+async function recordOwnFeedback(recordOwnFeedback, experienceID, experienceReferee, token){
   try {
     const employeeEmail = jwtDecode(token).email;
     
@@ -346,14 +391,23 @@ async function recordOwnFeedback(recordOwnFeedback, experienceID, token){
       throw new Error('Employee not found');
     }
     
+    const updateData = {
+      employeeText: recordOwnFeedback
+    };
+
+    if (experienceReferee !== undefined && experienceReferee !== null && experienceReferee !== '') {
+      const parsedRefereeId = parseInt(experienceReferee, 10);
+      if (!Number.isNaN(parsedRefereeId)) {
+        updateData.refereeID = parsedRefereeId;
+      }
+    }
+
     const result = await prisma.employees_experiences.updateMany({
       where: {
         employeeID: employee.employeeID,
         employee_experienceID: parseInt(experienceID)
       },
-      data: {
-        employeeText: recordOwnFeedback
-      }
+      data: updateData
     });
     
     return result;

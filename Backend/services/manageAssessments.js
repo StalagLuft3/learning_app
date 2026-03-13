@@ -64,6 +64,11 @@ async function getManagedAssessments(managerId) {
 // UPDATE ASSESSMENT DETAILS
 async function updateAssessment(assessmentID, updateData) {
   try {
+    const parsedAssessmentId = parseInt(assessmentID, 10);
+    if (Number.isNaN(parsedAssessmentId)) {
+      throw new Error('Invalid assessment ID');
+    }
+
     
     const updateFields = {};
     
@@ -101,10 +106,44 @@ async function updateAssessment(assessmentID, updateData) {
 
     const result = await prisma.assessments.update({
       where: {
-        assessmentID: assessmentID
+        assessmentID: parsedAssessmentId
       },
       data: updateFields
     });
+
+    // If thresholds change, recalculate status for scored enrollments.
+    if (updateFields.passing_score !== undefined || updateFields.max_score !== undefined) {
+      const enrollmentsWithScores = await prisma.employees_assessments.findMany({
+        where: {
+          assessmentID: parsedAssessmentId,
+          score: {
+            not: null
+          }
+        },
+        select: {
+          employee_assessmentID: true,
+          score: true
+        }
+      });
+
+      if (enrollmentsWithScores.length > 0) {
+        const updates = enrollmentsWithScores.map((enrollment) => {
+          const numericScore = Number(enrollment.score) || 0;
+          const recalculatedStatus = numericScore >= result.passing_score ? 'Passed' : 'Attempted';
+
+          return prisma.employees_assessments.update({
+            where: {
+              employee_assessmentID: enrollment.employee_assessmentID
+            },
+            data: {
+              currentStatus: recalculatedStatus
+            }
+          });
+        });
+
+        await prisma.$transaction(updates);
+      }
+    }
 
     return result;
   } catch (error) {

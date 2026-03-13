@@ -49,7 +49,7 @@ model courses {
   description       String?
   delivery_method   String?
   delivery_location String?
-  duration          Int
+  duration          Float
   courseManagerID   Int
   manager           employees           @relation("CourseManager", fields: [courseManagerID], references: [employeeID])
   employees_courses employees_courses[]

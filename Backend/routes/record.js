@@ -58,11 +58,11 @@ router.post("/requestReferee", async function (req, res) {
   console.log("Request body:", req.body);
   console.log("Cookies:", req.cookies);
   
-  const { refereeRequest } = req.body
+  const { refereeRequest, refereeID, experienceID } = req.body
   const token = req.cookies["x-auth-token"]
   
   console.log("Token present:", !!token);
-  console.log("Referee request data:", refereeRequest);
+  console.log("Referee request data:", { refereeRequest, refereeID, experienceID });
   
   if (!token) {
     console.log("No authentication token provided");
@@ -71,12 +71,12 @@ router.post("/requestReferee", async function (req, res) {
   
   try {
     console.log("Attempting to request referee");
-    const result = await record.requestReferee(refereeRequest, token)
+    const result = await record.requestReferee({ refereeRequest, refereeID, experienceID }, token)
     console.log("Referee request successful:", result);
     return res.status(200).json({ message: "Referee request submitted successfully", request: result });
   } catch (err) {
     console.error("Request referee error:", err);
-    return res.status(500).json({ error: "Error when trying to request referee. Try again later!" });
+    return res.status(500).json({ error: err.message || "Error when trying to request referee. Try again later!" });
   }
 });
 
@@ -124,10 +124,10 @@ router.post("/recordOwnFeedback", async function (req, res) {
   console.log("Cookies:", req.cookies);
   
   const token = req.cookies["x-auth-token"]
-  const {recordOwnFeedback, experienceID } = req.body
+  const {recordOwnFeedback, experienceID, experienceReferee } = req.body
   
   console.log("Token present:", !!token);
-  console.log("Own feedback data:", { recordOwnFeedback, experienceID });
+  console.log("Own feedback data:", { recordOwnFeedback, experienceID, experienceReferee });
   
   if (!token) {
     console.log("No authentication token provided");
@@ -136,7 +136,7 @@ router.post("/recordOwnFeedback", async function (req, res) {
   
   try {
     console.log("Attempting to record own feedback");
-    const result = await record.recordOwnFeedback(recordOwnFeedback, experienceID, token)
+    const result = await record.recordOwnFeedback(recordOwnFeedback, experienceID, experienceReferee, token)
     console.log("Own feedback recorded successfully:", result);
     return res.status(200).json({ message: "Own feedback recorded successfully", feedback: result });
   } catch (err) {

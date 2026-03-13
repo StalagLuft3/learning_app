@@ -97,6 +97,10 @@ async function updateCourseEnrollment(enrollmentId, updateData) {
 // UPDATE COURSE DETAILS
 async function updateCourse(courseID, updateData) {
   try {
+    const parsedCourseId = parseInt(courseID, 10);
+    if (Number.isNaN(parsedCourseId)) {
+      throw new Error('Invalid course ID');
+    }
     
     const updateFields = {};
     
@@ -109,7 +113,7 @@ async function updateCourse(courseID, updateData) {
     }
     
     if (updateData.duration !== undefined) {
-      updateFields.duration = updateData.duration;
+      updateFields.duration = parseFloat(updateData.duration) || 0;
     }
     
     if (updateData.deliveryMethod !== undefined) {
@@ -122,7 +126,7 @@ async function updateCourse(courseID, updateData) {
 
     const result = await prisma.courses.update({
       where: {
-        courseID: courseID
+        courseID: parsedCourseId
       },
       data: updateFields
     });
