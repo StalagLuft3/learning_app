@@ -1,0 +1,3 @@
+# Ignore environment files with secrets
+Backend/.env
+frontEnd/.env

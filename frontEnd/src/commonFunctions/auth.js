@@ -1,7 +1,7 @@
 // Authentication utilities for checking and managing auth state
 import Cookies from 'js-cookie';
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 // Check if user has a valid authentication token
 // Since we use HttpOnly cookies, we can't access them directly with JS
