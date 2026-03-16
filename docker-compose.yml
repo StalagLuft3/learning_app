@@ -5,7 +5,7 @@ services:
     env_file:
       - ./Backend/.env
     ports:
-      - "3000:3000"
+      - "5000:5000"
     depends_on:
       - db
     command: >
@@ -17,8 +17,9 @@ services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: example
-      POSTGRES_DB: mydb
+      POSTGRES_USER: learningapp
+      POSTGRES_PASSWORD: learningapp
+      POSTGRES_DB: learningapp
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"

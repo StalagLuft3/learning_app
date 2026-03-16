@@ -26,7 +26,14 @@ app.use(cookieParser());
 app.set('view engine', 'jsx');
 app.engine('jsx', require('express-react-views').createEngine());
 
-app.use(cors({ credentials: true, origin: ["http://localhost:5173"] }));
+app.use(cors({
+  credentials: true,
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://localhost"
+  ]
+}));
 
 app.use(express.json());
 
