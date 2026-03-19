@@ -6,7 +6,7 @@ import Header from "../components/ContentManagementHeader";
 import Footer from "../components/ITRFooter";
 import { divContainer, cardContainer } from "../styles/containerLayout";
 import { fetchData } from "../commonFunctions/api";
-import { extractEmployeesIDList, extractEmployeesExperienceIDList, filterAwaitingFeedbackIndices, filterFeedbackList } from "../commonFunctions/commonFeedbackUtilities";
+import { extractEmployeesIDList, extractEmployeesExperienceIDList, filterAwaitingFeedbackIndices, filterFeedbackList, updateItemStatus } from "../commonFunctions/commonFeedbackUtilities";
 
 function ExperienceFeedback() {
     const [data, setData] = useState([]);
@@ -15,6 +15,11 @@ function ExperienceFeedback() {
     const [alertVisible, setAlertVisible] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertType, setAlertType] = useState('success');
+    // Bulk update state
+    const [selectedIndices, setSelectedIndices] = useState([]);
+    const [selectAll, setSelectAll] = useState(false);
+    const [openBulkDialog, setOpenBulkDialog] = useState(false);
+    const [bulkFeedback, setBulkFeedback] = useState("");
 
     useEffect(() => {
         fetchData("/feedback")
@@ -33,6 +38,58 @@ function ExperienceFeedback() {
         setOpenRecordRefereeFeedbackDialog(false);
         setDialogIndex(null);
     }
+
+    // Bulk selection handlers
+    const handleCheckboxChange = (i) => {
+        setSelectedIndices(prev => prev.includes(i) ? prev.filter(idx => idx !== i) : [...prev, i]);
+    };
+    const handleSelectAll = () => {
+        if (selectAll) {
+            setSelectedIndices([]);
+            setSelectAll(false);
+        } else {
+            setSelectedIndices(filteredFeedbackList.map((_, i) => i));
+            setSelectAll(true);
+        }
+    };
+    const handleOpenBulkDialog = () => {
+        setBulkFeedback("");
+        setOpenBulkDialog(true);
+    };
+    const handleCloseBulkDialog = () => {
+        setOpenBulkDialog(false);
+    };
+    const handleBulkFeedbackChange = (e) => {
+        setBulkFeedback(e.detail.value);
+    };
+    const handleBulkSubmit = async () => {
+        setSubmittingFeedback(true);
+        try {
+            // For each selected index, update feedback
+            const promises = selectedIndices.map(idx => {
+                const d = filteredFeedbackList[idx];
+                return updateItemStatus('experience', d.employee_experienceID, { refereeText: bulkFeedback });
+            });
+            await Promise.all(promises);
+            setAlertMessage('Feedback submitted for all selected records!');
+            setAlertType('success');
+            setAlertVisible(true);
+            setTimeout(() => setAlertVisible(false), 3000);
+            setOpenBulkDialog(false);
+            setSelectedIndices([]);
+            setSelectAll(false);
+            // Refresh data
+            const refreshedData = await fetchData("/feedback");
+            setData(refreshedData.feedback);
+        } catch (error) {
+            setAlertMessage('Failed to submit feedback for all records.');
+            setAlertType('error');
+            setAlertVisible(true);
+            setTimeout(() => setAlertVisible(false), 5000);
+        } finally {
+            setSubmittingFeedback(false);
+        }
+    };
 
     const handleSubmitRefereeFeedback = async () => {
         try {
@@ -139,42 +196,64 @@ function ExperienceFeedback() {
                 />
             </div>
 
-            {
-                dataSubset.map((d, i) => {
-                    return (
-                        <div key={i} style={divContainer}>
-                            <div>
-                                <IcCardVertical style={cardContainer} heading={d.experienceDescription} subheading={"Start date of Experience [ " + d.recordDate + " ] | Duration (days) [ " + d.duration + " ]"}>
-                                    <>
-                                        <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
-                                        <IcTypography slot="adornment" variant="label-uppercase">{`${d.username}'s feedback on their experience`}</IcTypography>
-                                        <IcTypography slot="adornment">{d.employeeText}</IcTypography>
+            {/* Bulk update controls, only when awaiting filter is ON */}
+            {showOnlyAwaiting && filteredFeedbackList.length > 0 && (
+                <div style={{ ...divContainer, display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+                    <IcButton variant="primary" onClick={handleSelectAll}>
+                        {selectAll ? 'Deselect All' : 'Select All'}
+                    </IcButton>
+                    <IcButton variant="primary" onClick={handleOpenBulkDialog} disabled={selectedIndices.length === 0}>
+                        Update Selected ({selectedIndices.length})
+                    </IcButton>
+                </div>
+            )}
 
-                                        {d.refereeText != null ? (
-                                            <>
-                                                <IcStatusTag slot="interaction-button" label="Feedback Sent" status="success" />
-                                                <IcTypography slot="adornment" variant="label-uppercase">{`Your feedback on ${d.username}'s experience`}</IcTypography>
-                                                <IcTypography slot="adornment">{d.refereeText}</IcTypography>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <IcStatusTag slot="interaction-button" label="Awaiting your feedback" status="warning" />
-                                                <div slot="interaction-controls" style={{ display: "flex", gap: "16px" }}>
-                                                    <IcButton onClick={() => handleButtonClick(i)} variant="primary">Draft Feedback
-                                                        <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
-                                                    </IcButton>
-                                                </div>
-                                            </>
-                                        )}
-                                    </>
-                                </IcCardVertical>
-                            </div>
+            {dataSubset.map((d, i) => {
+                // Only show checkboxes for awaiting feedback and when filter is ON
+                const isAwaiting = d.refereeText == null;
+                const filteredIdx = filteredFeedbackList.findIndex(x => x.employee_experienceID === d.employee_experienceID);
+                return (
+                    <div key={i} style={divContainer}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                            {showOnlyAwaiting && isAwaiting && (
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIndices.includes(filteredIdx)}
+                                    onChange={() => handleCheckboxChange(filteredIdx)}
+                                    style={{ marginRight: '12px', marginTop: '24px', width: '20px', height: '20px' }}
+                                />
+                            )}
+                            <IcCardVertical style={cardContainer} heading={d.experienceDescription} subheading={"Start date of Experience [ " + d.recordDate + " ] | Duration (days) [ " + d.duration + " ]"}>
+                                <>
+                                    <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
+                                    <IcTypography slot="adornment" variant="label-uppercase">{`${d.username}'s feedback on their experience`}</IcTypography>
+                                    <IcTypography slot="adornment">{d.employeeText}</IcTypography>
+
+                                    {d.refereeText != null ? (
+                                        <>
+                                            <IcStatusTag slot="interaction-button" label="Feedback Sent" status="success" />
+                                            <IcTypography slot="adornment" variant="label-uppercase">{`Your feedback on ${d.username}'s experience`}</IcTypography>
+                                            <IcTypography slot="adornment">{d.refereeText}</IcTypography>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <IcStatusTag slot="interaction-button" label="Awaiting your feedback" status="warning" />
+                                            <div slot="interaction-controls" style={{ display: "flex", gap: "16px" }}>
+                                                <IcButton onClick={() => handleButtonClick(i)} variant="primary">Draft Feedback
+                                                    <SlottedSVGTemplate mdiIcon={mdiPuzzleOutline} />
+                                                </IcButton>
+                                            </div>
+                                        </>
+                                    )}
+                                </>
+                            </IcCardVertical>
                         </div>
-                    );
-                })
-            }
+                    </div>
+                );
+            })}
 
             <Footer />
+            {/* Single feedback dialog */}
             <IcDialog
                 size="large"
                 open={openRecordRefereeFeedbackDialog}
@@ -186,6 +265,35 @@ function ExperienceFeedback() {
             >
                 <form id="recordRefereeFeedback">
                     <IcTextField name="recordRefereeFeedback" style={cardContainer} rows={3} label={"Remember the Service's values of CREATIVITY, COURAGE, INTEGRITY and RESPECT. Be clear, specific and constructive."} placeholder="Describe how you think it went here (ACTION & RESULT)." type="text" minCharacters="4" maxLength="256" fullWidth="full-width" required />
+                </form>
+            </IcDialog>
+            {/* Bulk feedback dialog */}
+            <IcDialog
+                size="large"
+                open={openBulkDialog}
+                closeOnBackdropClick={false}
+                heading="Provide feedback for all selected records"
+                disableHeightConstraint={true}
+                onIcDialogClosed={handleCloseBulkDialog}
+                onIcDialogConfirmed={handleBulkSubmit}
+                confirmButtonText={submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
+                disableConfirmButton={submittingFeedback || bulkFeedback.trim().length < 4}
+            >
+                <form>
+                    <IcTextField
+                        name="bulkFeedback"
+                        style={cardContainer}
+                        rows={3}
+                        label={"This feedback will be applied to all selected records. Be clear, specific and constructive."}
+                        placeholder="Describe how you think it went here (ACTION & RESULT)."
+                        type="text"
+                        minCharacters="4"
+                        maxLength="256"
+                        fullWidth="full-width"
+                        required
+                        value={bulkFeedback}
+                        onIcInput={handleBulkFeedbackChange}
+                    />
                 </form>
             </IcDialog>
         </>
