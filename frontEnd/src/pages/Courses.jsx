@@ -210,7 +210,7 @@ function Courses() {
           }
         }} id="createCourseForm">
           <IcTextField name="courseName" style={cardContainer} label="Course Name" type="text" minCharacters={4} maxCharcters={64} fullWidth="full-width" required />
-          <IcTextField name="courseDescription" style={cardContainer} label="Course Description" rows={3} type="text" minCharacters={16} maxCharcters={256} fullWidth="full-width" required />
+          <IcTextField name="courseDescription" style={cardContainer} label="Course Description" rows={3} type="text" minLength={16} maxLength={512} fullWidth="full-width" required showCharacterCount helperText="Max 512 characters" />
           <IcRadioGroup name='courseLocation' label="Delivery Location" orientation="horizontal" required>
             <IcRadioOption value="High" label="High" />
             <IcRadioOption value="Low" label="Low" />
