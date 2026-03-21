@@ -1161,7 +1161,7 @@ async function getManagedCourses(managerId) {
         currentStatus: enrollment.currentStatus,
         recordDate: enrollment.recordDate,
         score: enrollment.score || null,
-        completionDate: enrollment.completionDate || null,
+        // completionDate removed
         username: enrollment.employees.username,
         role: enrollment.employees.role
       }))
@@ -1193,10 +1193,7 @@ async function updateCourseEnrollment(enrollmentId, updateData) {
     if (updateData.recordDate) {
       updateFields.recordDate = updateData.recordDate;
     }
-    
-    if (updateData.completionDate) {
-      updateFields.completionDate = updateData.completionDate;
-    }
+    // completionDate logic removed
 
 
     const result = await prisma.employees_courses.update({
@@ -1298,7 +1295,7 @@ async function getManagedAssessments(managerId) {
         currentStatus: enrollment.currentStatus,
         recordDate: enrollment.recordDate,
         score: enrollment.score || null,
-        completionDate: enrollment.completionDate || null,
+        // completionDate removed
         username: enrollment.employees.username,
         role: enrollment.employees.role
       }))
@@ -1386,9 +1383,7 @@ async function updateAssessmentEnrollment(enrollmentId, updateData) {
     
     // Remove accreditationDate logic - using completionDate instead
     
-    if (updateData.completionDate) {
-      updateFields.completionDate = updateData.completionDate;
-    }
+    // completionDate logic removed
 
 
     const result = await prisma.employees_assessments.update({

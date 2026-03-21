@@ -80,7 +80,7 @@ async function loadRecord(token){
         currentStatus: enrollment?.currentStatus,
         recordDate: enrollment?.recordDate,
         score: enrollment?.score,
-        completionDate: enrollment?.completionDate,
+        // completionDate removed
         courseID: course.courseID
       });
     });
@@ -94,7 +94,7 @@ async function loadRecord(token){
         currentStatus: enrollment?.currentStatus,
         recordDate: enrollment?.recordDate,
         scoreAchieved: enrollment?.score,
-        completionDate: enrollment?.completionDate,
+        // completionDate removed
         username: assessment.manager?.username,
         role: assessment.manager?.role,
         assessmentID: assessment.assessmentID

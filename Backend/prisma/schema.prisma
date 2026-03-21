@@ -64,7 +64,7 @@ model employees_courses {
   courseID          Int
   currentStatus     String
   recordDate        String
-  completionDate    String?
+  // completionDate removed as per deduplication
   score             Int?
   courses           courses   @relation(fields: [courseID], references: [courseID])
   employees         employees @relation(fields: [employeeID], references: [employeeID])
@@ -87,7 +87,7 @@ model employees_assessments {
   assessmentID          Int
   currentStatus         String?
   recordDate            String
-  completionDate        String?
+  // completionDate removed as per deduplication
   score                 Int?
   assessments           assessments @relation(fields: [assessmentID], references: [assessmentID])
   employees             employees   @relation(fields: [employeeID], references: [employeeID])

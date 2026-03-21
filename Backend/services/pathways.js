@@ -298,7 +298,7 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
           data: {
             currentStatus: 'Enrolled',
             recordDate: enrolDate,
-            completionDate: null,
+            // completionDate removed
             score: null
           }
         });
@@ -346,7 +346,7 @@ async function handleAutoEnrollment(pathwayID, employeeID, enrolDate) {
           data: {
             currentStatus: 'Enrolled',
             recordDate: enrolDate,
-            completionDate: null,
+            // completionDate removed
             score: null
           }
         });
@@ -573,7 +573,7 @@ async function deletePathway(pathwayID, token) {
           where: {
             employeeID: { in: employeeIds },
             courseID: { in: courseIds },
-            completionDate: null,
+            // completionDate removed
             score: null
           }
         });
@@ -584,7 +584,7 @@ async function deletePathway(pathwayID, token) {
           where: {
             employeeID: { in: employeeIds },
             assessmentID: { in: assessmentIds },
-            completionDate: null,
+            // completionDate removed
             score: null
           }
         });

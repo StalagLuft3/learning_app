@@ -77,7 +77,7 @@ async function getMultiple(token){
       description: course.description,
       delivery_method: course.delivery_method,
       delivery_location: course.delivery_location,
-      duration: course.duration,
+      duration: typeof course.duration === 'string' ? parseFloat(course.duration) : course.duration,
       courseManagerID: course.courseManagerID,
       username: course.manager?.username,
       role: course.manager?.role
@@ -104,7 +104,7 @@ async function getMultiple(token){
       description: assessment.description,
       delivery_method: assessment.delivery_method,
       delivery_location: assessment.delivery_location,
-      duration: assessment.duration,
+      duration: typeof assessment.duration === 'string' ? parseFloat(assessment.duration) : assessment.duration,
       manager_ID: assessment.manager_ID,
       max_score: assessment.max_score,
       passing_score: assessment.passing_score,
@@ -171,7 +171,7 @@ async function enrolCourse(enrolCourseID, token, enrolDate){
           data: {
             currentStatus: 'Enrolled',
             recordDate: enrolDate,
-            completionDate: null,
+            // completionDate removed
             score: null
           }
         });
@@ -238,7 +238,7 @@ async function enrolAssessment(enrolAssessmentID, token, enrolDate){
           data: {
             currentStatus: 'Enrolled',
             recordDate: enrolDate,
-            completionDate: null,
+            // completionDate removed
             score: null
           }
         });

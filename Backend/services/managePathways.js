@@ -322,7 +322,7 @@ async function updatePathwayEnrollment(enrollmentId, updateData, token) {
             where: {
               employeeID: employeeId,
               courseID: { in: courseIds },
-              completionDate: null,
+              // completionDate removed
               score: null
             }
           })
@@ -333,7 +333,7 @@ async function updatePathwayEnrollment(enrollmentId, updateData, token) {
             where: {
               employeeID: employeeId,
               assessmentID: { in: assessmentIds },
-              completionDate: null,
+              // completionDate removed
               score: null
             }
           })

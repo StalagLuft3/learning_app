@@ -327,7 +327,7 @@ router.put('/bulkUpdateAssessmentEnrollments', async function(req, res) {
         if (score !== undefined) {
           updateData.score = score;
         }
-        // Remove accreditationDate logic - using completionDate instead
+        // Remove accreditationDate logic - completionDate also removed
         
         const result = await manageAssessments.updateAssessmentEnrollment(enrollmentId, updateData);
         results.push({ enrollmentId, success: true, result });
