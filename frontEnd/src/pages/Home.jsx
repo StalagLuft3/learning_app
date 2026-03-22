@@ -9,21 +9,14 @@ import Footer from "../components/ITRFooter";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 
 import { fetchData } from "../commonFunctions/api";
-import { countAwaitingFeedback } from "../commonFunctions/commonUtilities";
 
 function Home() {
 
   const navigate = useNavigate();
-  const [data, setData] = useState([]);
   const [refereeItems, setRefereeItems] = useState({ experiences: [], courseEnrollments: [], assessments: [] });
   const [userInfo, setUserInfo] = useState(null);
 
   useEffect(() => {
-    // Fetch feedback requests (experiences)
-    fetchData("/feedback")
-      .then(data => setData(data.feedback))
-      .catch(err => console.error(err));
-
     // Fetch current user info
     fetchData("/Auth/user")
       .then((userData) => {
@@ -41,8 +34,8 @@ function Home() {
       .catch(err => console.error(err));
   }, []);
 
-  let awaitingFeedback = countAwaitingFeedback(data);
-  
+  const awaitingFeedback = refereeItems.experiences?.length || 0;
+
   // Calculate individual awaiting counts
   const awaitingCourses = refereeItems.courseEnrollments?.filter(item => {
     // Simple check for non-completed courses
