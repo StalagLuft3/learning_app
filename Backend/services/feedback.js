@@ -39,7 +39,6 @@ async function loadFeedbackRequests(token) {
     };
   } catch (error) {
     throw error;
-    throw error;
   }
 }
 
@@ -162,7 +161,6 @@ async function getRefereeItems(managerId) {
     };
   } catch (error) {
     throw error;
-    throw error;
   }
 }
 
@@ -250,7 +248,6 @@ async function updateItemStatus(itemType, itemId, updateData) {
     return result;
   } catch (error) {
     throw error;
-    throw error;
   }
 }
 
@@ -270,11 +267,8 @@ async function passFeedback(recordRefereeFeedback, employeeIndex, employeeExperi
     return result;
   } catch (error) {
     throw error;
-    throw error;
   }
 }
-
-    
 
 
 // EXPORTS

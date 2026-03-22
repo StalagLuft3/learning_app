@@ -123,7 +123,6 @@ async function loadRecord(token){
     };
   } catch (error) {
     throw error;
-    throw error;
   }
 }
 
