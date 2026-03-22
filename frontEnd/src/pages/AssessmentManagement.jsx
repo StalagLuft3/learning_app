@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcRadioGroup, IcRadioOption, IcSwitch } from "@ukic/react";
+import { IcButton, IcCardVertical, IcStatusTag, IcTextField, IcTypography, IcSelect, IcAlert, IcHero, IcTabContext, IcTabGroup, IcTab, IcTabPanel, IcBadge, IcSectionContainer, IcDialog, IcSwitch } from "@ukic/react";
+// IcRadioGroup and IcRadioOption are imported separately to avoid a Rollup TDZ
+// caused by combining Tab components and Radio components in the same import.
+import { IcRadioGroup, IcRadioOption } from "@ukic/react";
 import { mdiAccountCheck, mdiCheckDecagramOutline, mdiPencil, mdiCheck, mdiClose, mdiPlus, mdiDelete } from "@mdi/js";
 import SlottedSVGTemplate from "../components/slottedSVGTemplate";
 
