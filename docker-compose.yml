@@ -4,12 +4,15 @@ services:
     build: ./Backend
     env_file:
       - ./Backend/.env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: learningapp
+      POSTGRES_PASSWORD: learningapp
+      POSTGRES_DB: learningapp
     ports:
       - "5000:5000"
     depends_on:
       - db
-    command: >
-      sh -c "npx prisma migrate deploy && node server.js"
   frontend:
     build: ./frontEnd
     ports:

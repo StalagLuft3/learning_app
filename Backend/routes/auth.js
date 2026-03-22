@@ -39,7 +39,7 @@ router.post("/register",[
                 {
                     email: normalizedEmail
                 },
-                dotenv.parsed.SESSION_SECRET,
+                process.env.SESSION_SECRET,
                 {
                     expiresIn: 86400 //24 hours 
                 }
@@ -93,7 +93,7 @@ router.post("/login", async (req, res) => {
             {
                 email: user.result[0].email
             },
-            dotenv.parsed.SESSION_SECRET,
+            process.env.SESSION_SECRET,
             {
                 expiresIn: 86400 //24 hours 
             }
@@ -138,7 +138,7 @@ router.get("/verify", (req, res) => {
         }
 
         // Verify the token
-        const decoded = JWT.verify(token, dotenv.parsed.SESSION_SECRET);
+        const decoded = JWT.verify(token, process.env.SESSION_SECRET);
         
         // Token is valid
         return res.status(200).json({ 
@@ -164,7 +164,7 @@ router.get("/user", async (req, res) => {
         }
 
         // Verify and decode the token
-        const decoded = JWT.verify(token, dotenv.parsed.SESSION_SECRET);
+        const decoded = JWT.verify(token, process.env.SESSION_SECRET);
         
         // Get user details from database
         const userResult = await auth.search(decoded.email);
