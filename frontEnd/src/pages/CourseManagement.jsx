@@ -937,9 +937,10 @@ const CourseManagement = () => {
               value={editFormData.delivery_method || ''}
               onIcChange={(e) => handleFormChange('delivery_method', e?.detail?.value || e?.target?.value || '')}
               options={[
-                { label: 'In-Person', value: 'In-Person' },
-                { label: 'Virtual', value: 'Virtual' },
-                { label: 'Hybrid', value: 'Hybrid' }
+                { label: 'Online Course', value: 'Online Course' },
+                { label: 'Written Course', value: 'Written Course' },
+                { label: 'Practical Course', value: 'Practical Course' },
+                { label: 'Interview Course', value: 'Interview Course' }
               ]}
             />
           </div>
