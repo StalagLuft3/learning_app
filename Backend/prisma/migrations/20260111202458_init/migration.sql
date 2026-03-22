@@ -32,7 +32,7 @@ CREATE TABLE "courses" (
     "description" TEXT,
     "delivery_method" TEXT,
     "delivery_location" TEXT,
-    "duration" INTEGER NOT NULL,
+    "duration" DOUBLE PRECISION NOT NULL,
     "courseManagerID" INTEGER NOT NULL,
 
     CONSTRAINT "courses_pkey" PRIMARY KEY ("courseID")
